@@ -5,7 +5,7 @@ GreenCharge Network - Hệ thống quản lý mạng lưới trạm sạc xe đi
    - Trần Phạm Kim Ngân
    - Lê Minh Ngọc
    - Lê Thị Kim Ngọc
-   Nguyễn Diễm Ngọc
+   - Nguyễn Diễm Ngọc
 
 **2. Công nghệ**
    - SQL Server
