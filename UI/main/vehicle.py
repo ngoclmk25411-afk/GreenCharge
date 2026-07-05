@@ -26,40 +26,7 @@ class XeDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setFixedSize(420, 280)
-        self.setStyleSheet(f"""
-            QDialog {{
-                background-color: #ffffff;
-                border-radius: 16px;
-            }}
-            QLabel {{
-                color: #1f2937;
-                font-weight: 600;
-                font-size: 13px;
-            }}
-            QLineEdit {{
-                background-color: #f9fafb;
-                color: #1f2937;
-                border: 1.5px solid #d1d5db;
-                border-radius: 10px;
-                padding: 10px 14px;
-                font-size: 13px;
-            }}
-            QLineEdit:focus {{
-                border: 2px solid {G2};
-                background-color: #ffffff;
-            }}
-            QComboBox {{
-                background-color: #f9fafb;
-                color: #1f2937;
-                border: 1.5px solid #d1d5db;
-                border-radius: 10px;
-                padding: 10px 14px;
-                font-size: 13px;
-            }}
-            QComboBox:focus {{
-                border: 2px solid {G2};
-            }}
-        """)
+        self.setStyleSheet(DIALOG_STYLE)
 
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
@@ -168,6 +135,7 @@ class QuanLyXeWidget(QWidget):
         self.tbl = QTableWidget()
         self.tbl.setColumnCount(4)
         self.tbl.setHorizontalHeaderLabels(["Mã Xe", "Biển Số", "Chuẩn Sạc", "Loại Dòng Điện"])
+        self.tbl.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tbl.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tbl.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)

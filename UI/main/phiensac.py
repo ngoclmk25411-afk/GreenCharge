@@ -3,7 +3,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
-    QMessageBox, QGroupBox, QDoubleSpinBox, QSplitter, QFormLayout
+    QMessageBox, QGroupBox, QDoubleSpinBox, QSplitter, QFormLayout, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
@@ -40,30 +40,34 @@ class PhienSacWidget(QWidget):
         role = self.user["VaiTro"]
 
         if role == "NhanVien":
-            splitter = QSplitter(Qt.Orientation.Vertical)
-
             # Panel bắt đầu phiên
             top_box = QGroupBox("Bắt đầu phiên sạc từ lịch đặt")
             top_box.setStyleSheet(self._group_style())
+            top_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             top_layout = QVBoxLayout(top_box)
+            top_layout.setContentsMargins(14, 18, 14, 14)
+            top_layout.setSpacing(10)
 
             cols_lich = ["Mã Lịch", "Biển Số", "Khách Hàng", "Cổng", "Giờ Đặt"]
             self.tbl_lich = self._make_table(cols_lich)
-            top_layout.addWidget(self.tbl_lich)
+            top_layout.addWidget(self.tbl_lich, 1)
 
-
-            splitter.addWidget(top_box)
+            layout.addWidget(top_box, 1)
 
             # Panel kết thúc phiên
             bot_box = QGroupBox("Kết thúc phiên đang sạc")
             bot_box.setStyleSheet(self._group_style())
+            bot_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             bot_layout = QVBoxLayout(bot_box)
+            bot_layout.setContentsMargins(14, 18, 14, 14)
+            bot_layout.setSpacing(10)
 
             cols_phien = ["Mã Phiên", "Mã Lịch", "Giờ Bắt Đầu", "Trạng Thái"]
             self.tbl_phien = self._make_table(cols_phien)
-            bot_layout.addWidget(self.tbl_phien)
+            bot_layout.addWidget(self.tbl_phien, 1)
 
             kwh_row = QHBoxLayout()
+            kwh_row.setSpacing(10)
             kwh_row.addWidget(QLabel("Số kWh tiêu thụ:"))
             self.spin_kwh = QDoubleSpinBox()
             self.spin_kwh.setRange(0.01, 999.99)
@@ -72,28 +76,31 @@ class PhienSacWidget(QWidget):
             self.spin_kwh.setStyleSheet(self._input_style())
             kwh_row.addWidget(self.spin_kwh)
             btn_ket_thuc = QPushButton("⏹ Kết Thúc & Tạo Hóa Đơn")
+            btn_ket_thuc.setMinimumHeight(38)
             btn_ket_thuc.setStyleSheet(self._btn_style("#f59e0b"))
             btn_ket_thuc.clicked.connect(self.ket_thuc_phien)
             kwh_row.addWidget(btn_ket_thuc)
             kwh_row.addStretch()
             bot_layout.addLayout(kwh_row)
-            splitter.addWidget(bot_box)
-            splitter.setSizes([300, 300])
-            layout.addWidget(splitter)
+
+            layout.addWidget(bot_box, 1)
 
         elif role == "KhachHang":
-            splitter = QSplitter(Qt.Orientation.Vertical)
-
             # ── Panel 1: Lịch đã đặt (chờ sạc) ──────────────
             top_box = QGroupBox("📋 Lịch đã đặt — Chờ bắt đầu sạc")
             top_box.setStyleSheet(self._group_style())
+            top_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             top_layout = QVBoxLayout(top_box)
+            top_layout.setSpacing(10)
+            top_layout.setContentsMargins(14, 18, 14, 14)
 
             cols_lich = ["Mã Lịch", "Biển Số Xe", "Cổng Sạc", "Giờ Bắt Đầu", "Giờ Kết Thúc", "Trạng Thái"]
             self.tbl_lich_kh = self._make_table(cols_lich)
-            top_layout.addWidget(self.tbl_lich_kh)
+            top_layout.addWidget(self.tbl_lich_kh, 1)
+            top_layout.addSpacing(4)
 
             btn_top_row = QHBoxLayout()
+            btn_top_row.setSpacing(10)
             btn_bat_dau = QPushButton("▶ Bắt Đầu Sạc")
             btn_bat_dau.setMinimumHeight(40)
             btn_bat_dau.setStyleSheet(self._btn_style("#10b981"))
@@ -102,18 +109,23 @@ class PhienSacWidget(QWidget):
             btn_top_row.addStretch()
             top_layout.addLayout(btn_top_row)
 
-            splitter.addWidget(top_box)
+            layout.addWidget(top_box, 45)
 
             # ── Panel 2: Phiên sạc (đang sạc + lịch sử) ─────
             bot_box = QGroupBox("⚡ Phiên sạc của tôi")
             bot_box.setStyleSheet(self._group_style())
+            bot_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             bot_layout = QVBoxLayout(bot_box)
+            bot_layout.setSpacing(10)
+            bot_layout.setContentsMargins(14, 18, 14, 14)
 
             cols = ["Mã Phiên", "Cổng Sạc", "Bắt Đầu", "Kết Thúc", "Số kWh", "Trạng Thái"]
             self.tbl_phien = self._make_table(cols)
-            bot_layout.addWidget(self.tbl_phien)
+            bot_layout.addWidget(self.tbl_phien, 1)
+            bot_layout.addSpacing(4)
 
             btn_bot_row = QHBoxLayout()
+            btn_bot_row.setSpacing(10)
             btn_ngat = QPushButton("⏹ Ngắt Kết Nối & Thanh Toán")
             btn_ngat.setMinimumHeight(40)
             btn_ngat.setStyleSheet(self._btn_style("#ef4444"))
@@ -128,27 +140,29 @@ class PhienSacWidget(QWidget):
             btn_bot_row.addStretch()
             bot_layout.addLayout(btn_bot_row)
 
-            splitter.addWidget(bot_box)
-            splitter.setSizes([280, 320])
-            layout.addWidget(splitter)
+            layout.addWidget(bot_box, 55)
 
         else:
             # Investor: chỉ xem lịch sử
             box = QGroupBox("Lịch sử phiên sạc")
             box.setStyleSheet(self._group_style())
+            box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box_layout = QVBoxLayout(box)
+            box_layout.setContentsMargins(14, 18, 14, 14)
+            box_layout.setSpacing(10)
             cols = ["Mã Phiên", "Mã Lịch", "Bắt Đầu", "Kết Thúc", "Số kWh", "Trạng Thái"]
             self.tbl_phien = self._make_table(cols)
-            box_layout.addWidget(self.tbl_phien)
+            box_layout.addWidget(self.tbl_phien, 1)
 
             btn_row = QHBoxLayout()
             btn_rf = QPushButton("🔄 Làm mới")
+            btn_rf.setMinimumHeight(38)
             btn_rf.setStyleSheet(self._btn_style("#0ea5e9"))
             btn_rf.clicked.connect(self.load_data)
             btn_row.addWidget(btn_rf)
             btn_row.addStretch()
             box_layout.addLayout(btn_row)
-            layout.addWidget(box)
+            layout.addWidget(box, 1)
 
     def load_data(self):
         conn = get_conn()
@@ -203,7 +217,7 @@ class PhienSacWidget(QWidget):
                 SELECT l.MaLichDat, x.BienSo, l.MaCong, l.GioBatDau, l.GioKetThuc, l.TrangThaiLich
                 FROM LichDatCho l
                 JOIN Xe x ON l.MaXe = x.MaXe
-                WHERE x.MaNguoiDung=? AND l.TrangThaiLich='Đã đặt'
+                WHERE x.MaNguoiDung=? AND l.TrangThaiLich IN ('Đã đặt', 'Đã xác nhận')
                 ORDER BY l.GioBatDau ASC
             """, (ma,))
             rows_lich = cur.fetchall()
@@ -432,12 +446,76 @@ class PhienSacWidget(QWidget):
         ma_cong = self.tbl_lich_kh.item(row, 2).text()
         trang_thai = self.tbl_lich_kh.item(row, 5).text()
 
-        if trang_thai != "Đã đặt":
+        if trang_thai not in ("Đã đặt", "Đã xác nhận"):
             QMessageBox.warning(self, "Lỗi", f"Lịch này đã '{trang_thai}', không thể bắt đầu sạc.")
             return
 
         conn = get_conn()
         cur = conn.cursor()
+
+        # ── Kiểm tra khung giờ đặt lịch ──────────────────────────────────
+        cur.execute("SELECT GioBatDau, GioKetThuc FROM LichDatCho WHERE MaLichDat=?", (ma_lich,))
+        lich_time = cur.fetchone()
+        if not lich_time:
+            conn.close()
+            QMessageBox.warning(self, "Lỗi", "Không tìm thấy thông tin lịch đặt.")
+            return
+
+        gio_bd_str, gio_kt_str = lich_time
+        try:
+            gio_bd = datetime.strptime(gio_bd_str, "%Y-%m-%d %H:%M:%S")
+            gio_kt = datetime.strptime(gio_kt_str, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            conn.close()
+            QMessageBox.warning(self, "Lỗi", "Dữ liệu giờ đặt lịch không hợp lệ.")
+            return
+
+        now = datetime.now()
+
+        # 1. Chưa đến giờ đặt lịch
+        if now < gio_bd:
+            conn.close()
+            phut_con_lai = int((gio_bd - now).total_seconds() / 60) + 1
+            QMessageBox.information(
+                self, "Chưa đến giờ đặt lịch",
+                f"⏱ Lịch đặt {ma_lich} bắt đầu lúc {gio_bd.strftime('%H:%M %d/%m/%Y')}.\n"
+                f"Còn khoảng {phut_con_lai} phút nữa mới đến giờ.\n"
+                f"Vui lòng quay lại đúng khung giờ đã đặt."
+            )
+            return
+
+        # 2. Đã quá giờ kết thúc đặt lịch
+        if now > gio_kt:
+            cur.execute("UPDATE LichDatCho SET TrangThaiLich='Đã hủy' WHERE MaLichDat=?", (ma_lich,))
+            cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (ma_cong,))
+            conn.commit()
+            conn.close()
+            QMessageBox.warning(
+                self, "Lịch đặt đã hết hạn",
+                f"⏱ Lịch đặt {ma_lich} kết thúc lúc {gio_kt.strftime('%H:%M %d/%m/%Y')}.\n"
+                f"Thời gian đặt lịch đã trôi qua, hệ thống đã tự động hủy lịch\n"
+                f"và giải phóng cổng sạc {ma_cong} về trạng thái 'Trống'."
+            )
+            self.load_data()
+            return
+
+        # 3. Trễ hơn 15 phút so với giờ bắt đầu mà khách chưa đến sạc
+        # → tự động hủy lịch và giải phóng cổng sạc
+        tre_phut = (now - gio_bd).total_seconds() / 60
+        if tre_phut > 15:
+            cur.execute("UPDATE LichDatCho SET TrangThaiLich='Đã hủy' WHERE MaLichDat=?", (ma_lich,))
+            cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (ma_cong,))
+            conn.commit()
+            conn.close()
+            QMessageBox.warning(
+                self, "Lịch đặt đã bị hủy",
+                f"⏱ Lịch đặt {ma_lich} bắt đầu lúc {gio_bd.strftime('%H:%M %d/%m/%Y')}.\n"
+                f"Bạn đã đến trễ hơn 15 phút nên hệ thống đã tự động hủy lịch\n"
+                f"và giải phóng cổng sạc {ma_cong} về trạng thái 'Trống'.\n\n"
+                f"Vui lòng đặt lịch mới nếu vẫn muốn sạc."
+            )
+            self.load_data()
+            return
 
         cur.execute("SELECT TrangThaiCong, LoaiCaySac FROM CONG_SAC WHERE MaCong=?", (ma_cong,))
         cong_row = cur.fetchone()
@@ -616,10 +694,13 @@ class PhienSacWidget(QWidget):
         tbl = QTableWidget()
         tbl.setColumnCount(len(headers))
         tbl.setHorizontalHeaderLabels(headers)
+        tbl.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         tbl.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         tbl.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         tbl.setStyleSheet(self._table_style())
+        tbl.setAlternatingRowColors(True)
+        tbl.verticalHeader().setDefaultSectionSize(34)
         return tbl
 
     def _group_style(self): return GROUP_STYLE

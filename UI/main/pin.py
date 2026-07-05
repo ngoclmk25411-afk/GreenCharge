@@ -3,7 +3,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
-    QMessageBox, QGroupBox, QDoubleSpinBox, QSplitter, QFormLayout
+    QMessageBox, QGroupBox, QDoubleSpinBox, QSplitter, QFormLayout, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
@@ -40,13 +40,13 @@ class ThuGomPinWidget(QWidget):
         role = self.user["VaiTro"]
 
         if role == "NhanVien":
-            splitter = QSplitter(Qt.Orientation.Vertical)
-
             # Form tạo phiếu thu gom
             form_box = QGroupBox("Tạo phiếu thu gom pin mới")
             form_box.setStyleSheet(self._group_style())
+            form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             form_layout = QFormLayout(form_box)
             form_layout.setSpacing(10)
+            form_layout.setContentsMargins(16, 20, 16, 16)
 
             self.cmb_kh = QComboBox()
             self.cmb_kh.setStyleSheet(self._combo_style())
@@ -70,24 +70,25 @@ class ThuGomPinWidget(QWidget):
             form_layout.addRow("", self.lbl_preview)
 
             btn_tao = QPushButton("✅ Tạo Phiếu Thu Gom")
+            btn_tao.setMinimumHeight(38)
             btn_tao.setStyleSheet(self._btn_style("#10b981"))
             btn_tao.clicked.connect(self.tao_phieu)
             form_layout.addRow("", btn_tao)
 
             self.load_kh()
             self.load_loai_pin()
-            splitter.addWidget(form_box)
+            layout.addWidget(form_box)
 
             # Bảng lịch sử
             list_box = QGroupBox("Lịch sử thu gom")
             list_box.setStyleSheet(self._group_style())
+            list_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             list_layout = QVBoxLayout(list_box)
+            list_layout.setContentsMargins(12, 20, 12, 12)
             cols = ["Mã Phiếu", "Khách Hàng", "Loại Pin", "Khối Lượng", "Điểm Thưởng", "Ngày Thu Gom"]
             self.tbl_pin = self._make_table(cols)
-            list_layout.addWidget(self.tbl_pin)
-            splitter.addWidget(list_box)
-            splitter.setSizes([280, 320])
-            layout.addWidget(splitter)
+            list_layout.addWidget(self.tbl_pin, 1)
+            layout.addWidget(list_box, 1)
 
         elif role == "KhachHang":
             # Điểm tích lũy
@@ -97,15 +98,18 @@ class ThuGomPinWidget(QWidget):
                 color: #6ee7b7; font-size: 14px; font-weight: bold;
                 border-radius: 8px; padding: 10px 16px;
             """)
+            self.lbl_diem.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             layout.addWidget(self.lbl_diem)
 
             box = QGroupBox("Lịch sử thu gom pin của tôi")
             box.setStyleSheet(self._group_style())
+            box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box_layout = QVBoxLayout(box)
+            box_layout.setContentsMargins(12, 20, 12, 12)
             cols = ["Mã Phiếu", "Loại Pin", "Khối Lượng (kg)", "Điểm Thưởng", "Ngày Thu Gom"]
             self.tbl_pin = self._make_table(cols)
-            box_layout.addWidget(self.tbl_pin)
-            layout.addWidget(box)
+            box_layout.addWidget(self.tbl_pin, 1)
+            layout.addWidget(box, 1)
 
         else:
             # Investor: thống kê
@@ -115,15 +119,18 @@ class ThuGomPinWidget(QWidget):
                 color: #bbf7d0; font-size: 14px; font-weight: bold;
                 border-radius: 8px; padding: 10px 16px;
             """)
+            self.lbl_tong.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             layout.addWidget(self.lbl_tong)
 
             box = QGroupBox("Danh sách phiếu thu gom tại trạm của bạn")
             box.setStyleSheet(self._group_style())
+            box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box_layout = QVBoxLayout(box)
+            box_layout.setContentsMargins(12, 20, 12, 12)
             cols = ["Mã Phiếu", "Khách Hàng", "Nhân Viên", "Loại Pin", "Khối Lượng", "Điểm Thưởng", "Ngày"]
             self.tbl_pin = self._make_table(cols)
-            box_layout.addWidget(self.tbl_pin)
-            layout.addWidget(box)
+            box_layout.addWidget(self.tbl_pin, 1)
+            layout.addWidget(box, 1)
 
     def load_kh(self):
         conn = get_conn()
@@ -282,10 +289,13 @@ class ThuGomPinWidget(QWidget):
         tbl = QTableWidget()
         tbl.setColumnCount(len(headers))
         tbl.setHorizontalHeaderLabels(headers)
+        tbl.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         tbl.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         tbl.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         tbl.setStyleSheet(self._table_style())
+        tbl.setAlternatingRowColors(True)
+        tbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         return tbl
 
     def _group_style(self): return GROUP_STYLE

@@ -3,7 +3,7 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
-    QMessageBox, QGroupBox, QSpinBox, QSplitter, QFrame
+    QMessageBox, QGroupBox, QSpinBox, QSplitter, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
@@ -47,33 +47,38 @@ class ThanhToanWidget(QWidget):
                 color: #6ee7b7; font-size: 14px; font-weight: bold;
                 border-radius: 8px; padding: 10px 16px;
             """)
+            self.lbl_diem.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             layout.addWidget(self.lbl_diem)
-
-            splitter = QSplitter(Qt.Orientation.Vertical)
 
             # Bảng hóa đơn
             top_box = QGroupBox("Danh sách Hóa Đơn")
             top_box.setStyleSheet(self._group_style())
+            top_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             top_layout = QVBoxLayout(top_box)
+            top_layout.setContentsMargins(14, 18, 14, 14)
+            top_layout.setSpacing(10)
             cols = ["Mã HD", "Phiên Sạc", "Tổng Tiền Gốc", "Điểm Dùng", "Tiền Giảm", "Thanh Toán", "Trạng Thái", "Ngày"]
             self.tbl_hd = self._make_table(cols)
             self.tbl_hd.selectionModel().selectionChanged.connect(self.on_hd_selected)
-            top_layout.addWidget(self.tbl_hd)
-            splitter.addWidget(top_box)
+            top_layout.addWidget(self.tbl_hd, 1)
+            layout.addWidget(top_box, 1)
 
             # Panel thanh toán
             bot_box = QGroupBox("Thanh toán hóa đơn đã chọn")
             bot_box.setStyleSheet(self._group_style())
+            bot_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             bot_layout = QHBoxLayout(bot_box)
+            bot_layout.setContentsMargins(14, 18, 14, 14)
+            bot_layout.setSpacing(10)
 
             self.lbl_hd_info = QLabel("Chọn hóa đơn để thanh toán")
-            self.lbl_hd_info.setStyleSheet("color: #94a3b8;")
+            self.lbl_hd_info.setStyleSheet("color: #6b7280;")
             bot_layout.addWidget(self.lbl_hd_info)
 
             bot_layout.addStretch()
 
             spin_label = QLabel("Điểm xanh dùng:")
-            spin_label.setStyleSheet("color: #e2e8f0;")
+            spin_label.setStyleSheet("color: #374151; font-weight: 600;")
             self.spin_diem = QSpinBox()
             self.spin_diem.setRange(0, 9999)
             self.spin_diem.setSingleStep(10)
@@ -81,13 +86,14 @@ class ThanhToanWidget(QWidget):
             self.spin_diem.valueChanged.connect(self.tinh_tien_sau_giam)
 
             self.lbl_sau_giam = QLabel("Sau giảm: 0 đ")
-            self.lbl_sau_giam.setStyleSheet("color: #fbbf24; font-weight: bold; font-size: 13px;")
+            self.lbl_sau_giam.setStyleSheet(f"color: {G1}; font-weight: bold; font-size: 13px;")
 
             self.cmb_pttt = QComboBox()
             self.cmb_pttt.addItems(["Tiền mặt", "Chuyển khoản", "Ví điện tử", "Thẻ ngân hàng"])
             self.cmb_pttt.setStyleSheet(self._combo_style())
 
             btn_pay = QPushButton("✅ Xác nhận Thanh Toán")
+            btn_pay.setMinimumHeight(38)
             btn_pay.setStyleSheet(self._btn_style("#10b981"))
             btn_pay.clicked.connect(self.thanh_toan)
 
@@ -97,41 +103,76 @@ class ThanhToanWidget(QWidget):
             bot_layout.addWidget(self.cmb_pttt)
             bot_layout.addWidget(btn_pay)
 
-            splitter.addWidget(bot_box)
-            splitter.setSizes([400, 120])
-            layout.addWidget(splitter)
+            layout.addWidget(bot_box)
 
         elif role == "ChuDauTu":
-            # Thống kê doanh thu
-            self.lbl_doanh_thu = QLabel("💰 Tổng Doanh Thu: 0 đ")
-            self.lbl_doanh_thu.setStyleSheet("""
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #1e3a5f,stop:1 #1e40af);
-                color: #93c5fd; font-size: 14px; font-weight: bold;
-                border-radius: 8px; padding: 10px 16px;
-            """)
-            layout.addWidget(self.lbl_doanh_thu)
+            # ── Bộ lọc: chọn trạm để xem doanh thu ──────────────────────
+            filter_row = QHBoxLayout()
+            filter_row.setSpacing(10)
+            lbl_chon = QLabel("🏗️ Xem doanh thu tại trạm:")
+            lbl_chon.setStyleSheet(LBL_STYLE)
+            self.cmb_tram_dt = QComboBox()
+            self.cmb_tram_dt.setStyleSheet(self._combo_style())
+            self.cmb_tram_dt.setMinimumHeight(38)
+            self.cmb_tram_dt.currentIndexChanged.connect(self.load_data)
+            filter_row.addWidget(lbl_chon)
+            filter_row.addWidget(self.cmb_tram_dt, 1)
+            layout.addLayout(filter_row)
+            layout.addSpacing(4)
 
-            box = QGroupBox("Chi tiết Hóa Đơn Tại Trạm")
+            # ── Card tổng hợp ────────────────────────────────────────────
+            card_row = QHBoxLayout()
+            card_row.setSpacing(14)
+            self.card_doanh_thu = self._make_stat_card("💰", "Tổng Doanh Thu", "0 đ", G1)
+            self.card_kwh = self._make_stat_card("⚡", "Tổng kWh Tiêu Thụ", "0 kWh", "#0ea5e9")
+            self.card_phien = self._make_stat_card("🔌", "Số Phiên Sạc", "0 phiên", "#8b5cf6")
+            card_row.addWidget(self.card_doanh_thu)
+            card_row.addWidget(self.card_kwh)
+            card_row.addWidget(self.card_phien)
+            layout.addLayout(card_row)
+            layout.addSpacing(4)
+
+            # ── Bảng chi tiết doanh thu ──────────────────────────────────
+            box = QGroupBox("Chi tiết Doanh Thu Theo Trạm")
             box.setStyleSheet(self._group_style())
+            box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box_layout = QVBoxLayout(box)
-            cols = ["Mã HD", "Khách Hàng", "Tổng Tiền", "Phí App", "Doanh Thu CDT", "Trạng Thái", "Ngày TT"]
+            box_layout.setContentsMargins(14, 18, 14, 14)
+            box_layout.setSpacing(10)
+            cols = ["Mã HD", "Trạm Sạc", "Khách Hàng", "Số kWh", "Tổng Tiền", "Phí App", "Doanh Thu CDT", "Trạng Thái", "Ngày TT"]
             self.tbl_hd = self._make_table(cols)
-            box_layout.addWidget(self.tbl_hd)
-            layout.addWidget(box)
+            box_layout.addWidget(self.tbl_hd, 1)
+
+            btn_rf_row = QHBoxLayout()
+            btn_rf_row.addStretch()
+            btn_rf = QPushButton("🔄 Làm mới")
+            btn_rf.setMinimumHeight(38)
+            btn_rf.setStyleSheet(self._btn_style("#0ea5e9"))
+            btn_rf.clicked.connect(self.load_data)
+            btn_rf_row.addWidget(btn_rf)
+            box_layout.addLayout(btn_rf_row)
+
+            layout.addWidget(box, 1)
+
+            self._load_tram_list_dt()
 
         else:
             # Nhân viên: xem hóa đơn
             box = QGroupBox("Hóa đơn tại trạm")
             box.setStyleSheet(self._group_style())
+            box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box_layout = QVBoxLayout(box)
+            box_layout.setContentsMargins(14, 18, 14, 14)
+            box_layout.setSpacing(10)
             cols = ["Mã HD", "Phiên", "Khách Hàng", "Tổng Tiền", "Thanh Toán", "Trạng Thái", "Ngày"]
             self.tbl_hd = self._make_table(cols)
-            box_layout.addWidget(self.tbl_hd)
+            box_layout.addWidget(self.tbl_hd, 1)
             btn_rf = QPushButton("🔄 Làm mới")
+            btn_rf.setMinimumHeight(38)
             btn_rf.setStyleSheet(self._btn_style("#0ea5e9"))
             btn_rf.clicked.connect(self.load_data)
             box_layout.addWidget(btn_rf)
-            layout.addWidget(box)
+            layout.addWidget(box, 1)
 
     def load_data(self):
         conn = get_conn()
@@ -175,37 +216,66 @@ class ThanhToanWidget(QWidget):
                     self.tbl_hd.setItem(i, j, item)
 
         elif role == "ChuDauTu":
-            cur.execute("""
-                SELECT SUM(hd.DoanhThuCDT) FROM HoaDon hd
-                JOIN PhienSac ps ON hd.MaPhien = ps.MaPhien
-                LEFT JOIN LichDatCho l ON ps.MaLichDat = l.MaLichDat
-                LEFT JOIN CONG_SAC cs ON l.MaCong = cs.MaCong
-                LEFT JOIN TRAM_SAC ts ON cs.MaTram = ts.MaTram
-                WHERE ts.MaNguoiDung=? AND hd.TrangThaiHD='Đã thanh toán'
-            """, (ma,))
-            r = cur.fetchone()
-            total = r[0] if r and r[0] else 0
-            self.lbl_doanh_thu.setText(f"💰 Tổng Doanh Thu (Đã thanh toán): {int(total):,} đ")
+            if not hasattr(self, "cmb_tram_dt"):
+                conn.close()
+                return
 
-            cur.execute("""
-                SELECT hd.MaHD, nd.HoTen, hd.TongTienGoc, hd.PhiVanHanhApp,
-                       hd.DoanhThuCDT, hd.TrangThaiHD, hd.NgayThanhToan
+            ma_tram_sel = self.cmb_tram_dt.currentData()
+
+            where_clause = "ts.MaNguoiDung=?"
+            params = [ma]
+            if ma_tram_sel:
+                where_clause += " AND ts.MaTram=?"
+                params.append(ma_tram_sel)
+
+            # ── Card tổng hợp (chỉ tính hóa đơn đã thanh toán) ──────────
+            cur.execute(f"""
+                SELECT
+                    COALESCE(SUM(hd.DoanhThuCDT), 0),
+                    COALESCE(SUM(ps.SoKwhTieuThu), 0),
+                    COUNT(DISTINCT ps.MaPhien)
+                FROM HoaDon hd
+                JOIN PhienSac ps ON hd.MaPhien = ps.MaPhien
+                JOIN LichDatCho l ON ps.MaLichDat = l.MaLichDat
+                JOIN CONG_SAC cs ON l.MaCong = cs.MaCong
+                JOIN TRAM_SAC ts ON cs.MaTram = ts.MaTram
+                WHERE {where_clause} AND hd.TrangThaiHD='Đã thanh toán'
+            """, params)
+            tong_dt, tong_kwh, so_phien = cur.fetchone()
+            self.card_doanh_thu.value_label.setText(f"{int(tong_dt or 0):,} đ")
+            self.card_kwh.value_label.setText(f"{float(tong_kwh or 0):,.1f} kWh")
+            self.card_phien.value_label.setText(f"{so_phien or 0} phiên")
+
+            # ── Bảng chi tiết doanh thu theo trạm ────────────────────────
+            cur.execute(f"""
+                SELECT hd.MaHD, ts.TenTram, nd.HoTen, ps.SoKwhTieuThu,
+                       hd.TongTienGoc, hd.PhiVanHanhApp, hd.DoanhThuCDT,
+                       hd.TrangThaiHD, hd.NgayThanhToan
                 FROM HoaDon hd
                 JOIN NGUOI_DUNG nd ON hd.MaNguoiDung = nd.MaNguoiDung
                 JOIN PhienSac ps ON hd.MaPhien = ps.MaPhien
-                LEFT JOIN LichDatCho l ON ps.MaLichDat = l.MaLichDat
-                LEFT JOIN CONG_SAC cs ON l.MaCong = cs.MaCong
-                LEFT JOIN TRAM_SAC ts ON cs.MaTram = ts.MaTram
-                WHERE ts.MaNguoiDung=?
+                JOIN LichDatCho l ON ps.MaLichDat = l.MaLichDat
+                JOIN CONG_SAC cs ON l.MaCong = cs.MaCong
+                JOIN TRAM_SAC ts ON cs.MaTram = ts.MaTram
+                WHERE {where_clause}
                 ORDER BY hd.NgayThanhToan DESC
-            """, (ma,))
+            """, params)
             rows = cur.fetchall()
             self.tbl_hd.setRowCount(len(rows))
+            color_map = {"Chưa thanh toán": "#f59e0b", "Đã thanh toán": "#10b981",
+                         "Thất bại": "#ef4444", "Đã hoàn tiền": "#8b5cf6"}
             for i, row in enumerate(rows):
                 for j, val in enumerate(row):
-                    text = f"{int(val):,} đ" if j in (2, 3, 4) and val else str(val) if val else ""
+                    if j == 3 and val is not None:
+                        text = f"{float(val):,.1f} kWh"
+                    elif j in (4, 5, 6) and val is not None:
+                        text = f"{int(val):,} đ"
+                    else:
+                        text = str(val) if val is not None else ""
                     item = QTableWidgetItem(text)
                     item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                    if j == 7:
+                        item.setForeground(QColor(color_map.get(val, "#374151")))
                     self.tbl_hd.setItem(i, j, item)
 
         elif role == "NhanVien":
@@ -362,14 +432,58 @@ class ThanhToanWidget(QWidget):
         )
 
         self.load_data()
+    def _load_tram_list_dt(self):
+        """Nạp danh sách các trạm thuộc sở hữu của Chủ đầu tư vào combo lọc doanh thu."""
+        ma = self.user["MaNguoiDung"]
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT MaTram, TenTram FROM TRAM_SAC WHERE MaNguoiDung=? ORDER BY TenTram", (ma,))
+        rows = cur.fetchall()
+        conn.close()
+
+        self.cmb_tram_dt.blockSignals(True)
+        self.cmb_tram_dt.clear()
+        self.cmb_tram_dt.addItem("🏢  Tất cả các trạm", None)
+        for r in rows:
+            self.cmb_tram_dt.addItem(f"{r[1]}  ({r[0]})", r[0])
+        self.cmb_tram_dt.blockSignals(False)
+
+    def _make_stat_card(self, icon, title, value, color):
+        """Tạo một card thống kê nhỏ (icon + tiêu đề + giá trị) theo theme Modern Emerald."""
+        frame = QFrame()
+        frame.setStyleSheet(f"""
+            QFrame {{
+                background-color: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-left: 4px solid {color};
+                border-radius: 10px;
+            }}
+        """)
+        v = QVBoxLayout(frame)
+        v.setContentsMargins(16, 12, 16, 12)
+        v.setSpacing(4)
+
+        lbl_top = QLabel(f"{icon}  {title}")
+        lbl_top.setStyleSheet("color: #6b7280; font-size: 12px; font-weight: 600;")
+        lbl_val = QLabel(value)
+        lbl_val.setStyleSheet(f"color: {color}; font-size: 20px; font-weight: 800;")
+
+        v.addWidget(lbl_top)
+        v.addWidget(lbl_val)
+        frame.value_label = lbl_val
+        return frame
+
     def _make_table(self, headers):
         tbl = QTableWidget()
         tbl.setColumnCount(len(headers))
         tbl.setHorizontalHeaderLabels(headers)
+        tbl.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         tbl.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         tbl.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         tbl.setStyleSheet(self._table_style())
+        tbl.setAlternatingRowColors(True)
+        tbl.verticalHeader().setDefaultSectionSize(34)
         return tbl
 
     def _group_style(self): return GROUP_STYLE

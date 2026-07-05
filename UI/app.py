@@ -709,11 +709,16 @@ class MainWindow(QMainWindow):
         # ── Top header ───────────────────────
         header = QFrame()
         header.setFixedHeight(66)
+        header.setObjectName("header_frame")
         header.setStyleSheet(f"""
-            QFrame {{
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-                    stop:0 {G1}, stop:0.5 {G2}, stop:1 {G3});
-                border-bottom: 1px solid #047857;
+            QFrame#header_frame {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #064e3b, stop:0.4 #059669, stop:1 #10b981);
+                border-bottom: 2px solid #047857;
+            }}
+            QFrame#header_frame QLabel {{
+                background: transparent;
+                font-family: 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
             }}
         """)
         h_layout = QHBoxLayout(header)
@@ -731,39 +736,45 @@ class MainWindow(QMainWindow):
 
         badge = QLabel(f"  {role_names[role]}  ")
         badge.setStyleSheet(f"""
-            background-color: rgba(255,255,255,0.18);
+            background-color: rgba(255, 255, 255, 0.12);
             color: #ffffff;
-            border: 1.5px solid rgba(255,255,255,0.4);
-            border-radius: 14px;
-            padding: 4px 12px;
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            border-radius: 8px;
+            padding: 6px 16px;
             font-weight: 700;
             font-size: 12px;
         """)
 
         name_lbl = QLabel(f"  👋  {self.user['HoTen']}")
-        name_lbl.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: 600;")
+        name_lbl.setStyleSheet("color: #ffffff; font-size: 13px; font-weight: 600; background: transparent;")
 
         btn_logout = QPushButton("⬅ Đăng xuất")
         btn_logout.setStyleSheet("""
             QPushButton {
-                background-color: rgba(255,255,255,0.15);
+                background-color: rgba(255, 255, 255, 0.12);
                 color: #ffffff;
-                border: 1.5px solid rgba(255,255,255,0.35);
+                border: 1.5px solid rgba(255, 255, 255, 0.25);
                 border-radius: 8px;
                 padding: 6px 16px;
                 font-weight: 700;
                 font-size: 12px;
             }
-            QPushButton:hover { background-color: rgba(255,255,255,0.28); }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.25);
+                border-color: rgba(255, 255, 255, 0.45);
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.35);
+            }
         """)
         btn_logout.clicked.connect(self.logout)
 
-        h_layout.addWidget(app_name)
+        h_layout.addWidget(app_name, alignment=Qt.AlignmentFlag.AlignCenter)
         h_layout.addStretch()
-        h_layout.addWidget(badge)
-        h_layout.addWidget(name_lbl)
+        h_layout.addWidget(badge, alignment=Qt.AlignmentFlag.AlignCenter)
+        h_layout.addWidget(name_lbl, alignment=Qt.AlignmentFlag.AlignCenter)
         h_layout.addSpacing(8)
-        h_layout.addWidget(btn_logout)
+        h_layout.addWidget(btn_logout, alignment=Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(header)
 
         # ── Tab content ──────────────────────
@@ -778,9 +789,9 @@ class MainWindow(QMainWindow):
             self.tabs.addTab(ThanhToanWidget(self.user),  "💳  Hóa Đơn")
             self.tabs.addTab(ThuGomPinWidget(self.user),  "♻️  Thu Gom Pin")
         elif role == "NhanVien":
+            # Khách hàng tự thao tác Đặt Lịch & Phiên Sạc theo lịch của họ,
+            # nên Nhân viên chỉ còn quản lý Trạm/Cổng, Bảo trì và Thu gom pin.
             self.tabs.addTab(TramSacWidget(self.user),    "🔌  Trạm & Cổng")
-            self.tabs.addTab(LichDatChoWidget(self.user), "📅  Lịch Đặt")
-            self.tabs.addTab(PhienSacWidget(self.user),   "⚡  Phiên Sạc")
             self.tabs.addTab(BaoTriWidget(self.user),     "🔧  Bảo Trì")
             self.tabs.addTab(ThuGomPinWidget(self.user),  "♻️  Thu Gom Pin")
         elif role == "ChuDauTu":

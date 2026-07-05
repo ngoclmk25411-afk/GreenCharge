@@ -3,7 +3,8 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
-    QMessageBox, QGroupBox, QDateTimeEdit, QFormLayout, QSplitter, QFrame, QLineEdit
+    QMessageBox, QGroupBox, QDateTimeEdit, QFormLayout, QSplitter, QFrame, QLineEdit,
+    QSizePolicy
 )
 from PyQt6.QtCore import Qt, QDateTime
 from PyQt6.QtGui import QColor, QFont
@@ -40,31 +41,37 @@ class LichDatChoWidget(QWidget):
         role = self.user["VaiTro"]
 
         if role == "KhachHang":
-            splitter = QSplitter(Qt.Orientation.Vertical)
-
             # Form đặt lịch
             form_box = QGroupBox("Đặt lịch mới")
             form_box.setStyleSheet(self._group_style())
+            form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             form_layout = QFormLayout(form_box)
             form_layout.setSpacing(10)
+            form_layout.setContentsMargins(16, 20, 16, 16)
 
             self.cmb_xe = QComboBox()
             self.cmb_xe.setStyleSheet(self._combo_style())
+            self.cmb_xe.setMinimumHeight(38)
             self.cmb_tram = QComboBox()
             self.cmb_tram.setStyleSheet(self._combo_style())
+            self.cmb_tram.setMinimumHeight(38)
             self.cmb_tram.currentIndexChanged.connect(self.load_cong)
             self.cmb_cong = QComboBox()
             self.cmb_cong.setStyleSheet(self._combo_style())
+            self.cmb_cong.setMinimumHeight(38)
 
             self.dt_bat_dau = QDateTimeEdit(QDateTime.currentDateTime())
             self.dt_bat_dau.setDisplayFormat("yyyy-MM-dd HH:mm")
             self.dt_bat_dau.setStyleSheet(self._input_style())
             self.dt_bat_dau.setCalendarPopup(True)
+            self.dt_bat_dau.setMinimumHeight(38)
+            self.dt_bat_dau.dateTimeChanged.connect(self.on_start_time_changed)
 
             self.dt_ket_thuc = QDateTimeEdit(QDateTime.currentDateTime().addSecs(3600))
             self.dt_ket_thuc.setDisplayFormat("yyyy-MM-dd HH:mm")
             self.dt_ket_thuc.setStyleSheet(self._input_style())
             self.dt_ket_thuc.setCalendarPopup(True)
+            self.dt_ket_thuc.setMinimumHeight(38)
 
             form_layout.addRow("Xe của bạn:", self.cmb_xe)
             form_layout.addRow("Trạm sạc:", self.cmb_tram)
@@ -73,52 +80,61 @@ class LichDatChoWidget(QWidget):
             form_layout.addRow("Giờ kết thúc:", self.dt_ket_thuc)
 
             btn_dat = QPushButton("✅ Đặt Lịch")
+            btn_dat.setMinimumHeight(38)
             btn_dat.setStyleSheet(self._btn_style("#10b981"))
             btn_dat.clicked.connect(self.dat_lich)
             form_layout.addRow("", btn_dat)
 
             self.load_xe()
             self.load_tram()
-            splitter.addWidget(form_box)
+            layout.addWidget(form_box)
 
             # Bảng lịch đã đặt
             list_box = QGroupBox("Lịch đã đặt")
             list_box.setStyleSheet(self._group_style())
+            list_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             list_layout = QVBoxLayout(list_box)
+            list_layout.setContentsMargins(12, 20, 12, 12)
+            list_layout.setSpacing(10)
             self.tbl_lich = self._make_table(["Mã Lịch", "Xe", "Cổng", "Bắt đầu", "Kết thúc", "Trạng thái"])
-            list_layout.addWidget(self.tbl_lich)
+            list_layout.addWidget(self.tbl_lich, 1)
 
             btn_huy = QPushButton("❌ Hủy Lịch Đã Chọn")
+            btn_huy.setMinimumHeight(38)
             btn_huy.setStyleSheet(self._btn_style("#ef4444"))
             btn_huy.clicked.connect(self.huy_lich)
             list_layout.addWidget(btn_huy)
-            splitter.addWidget(list_box)
-            splitter.setSizes([280, 320])
-            layout.addWidget(splitter)
+            layout.addWidget(list_box, 1)
 
         else:
             # Staff / Investor: chỉ xem danh sách lịch đặt
             box = QGroupBox("Danh sách lịch đặt tại trạm")
             box.setStyleSheet(self._group_style())
+            box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box_layout = QVBoxLayout(box)
+            box_layout.setContentsMargins(12, 20, 12, 12)
+            box_layout.setSpacing(10)
             cols = ["Mã Lịch", "Biển Số Xe", "Khách Hàng", "Cổng", "Bắt đầu", "Kết thúc", "Trạng thái"]
             self.tbl_lich = self._make_table(cols)
-            box_layout.addWidget(self.tbl_lich)
+            box_layout.addWidget(self.tbl_lich, 1)
 
             btn_row = QHBoxLayout()
 
             btn_refresh = QPushButton("🔄 Làm mới")
+            btn_refresh.setMinimumHeight(38)
             btn_refresh.setStyleSheet(self._btn_style("#0ea5e9"))
             btn_refresh.clicked.connect(self.load_data)
             btn_row.addWidget(btn_refresh)
 
             if role == "NhanVien":
                 btn_xn = QPushButton("✔ Xác nhận khách")
+                btn_xn.setMinimumHeight(38)
                 btn_xn.setStyleSheet(self._btn_style("#10b981"))
                 btn_xn.clicked.connect(self.xac_nhan_khach)
                 btn_row.addWidget(btn_xn)
 
                 btn_start = QPushButton("▶ Bắt đầu sạc")
+                btn_start.setMinimumHeight(38)
                 btn_start.setStyleSheet(self._btn_style("#f59e0b"))
                 btn_start.clicked.connect(self.bat_dau_sac)
                 btn_row.addWidget(btn_start)
@@ -126,7 +142,10 @@ class LichDatChoWidget(QWidget):
             btn_row.addStretch()
 
             box_layout.addLayout(btn_row)
-            layout.addWidget(box)
+            layout.addWidget(box, 1)
+
+    def on_start_time_changed(self, dt):
+        self.dt_ket_thuc.setDateTime(dt.addSecs(3600))
 
     def load_xe(self):
         conn = get_conn()
@@ -199,6 +218,14 @@ class LichDatChoWidget(QWidget):
         ma_xe = self.cmb_xe.currentData()
         ma_cong = self.cmb_cong.currentData()
 
+        if not ma_xe:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng chọn xe hợp lệ.")
+            return
+
+        if not ma_cong:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng chọn cổng sạc hợp lệ.")
+            return
+
         bd = self.dt_bat_dau.dateTime().toPyDateTime()
         kt = self.dt_ket_thuc.dateTime().toPyDateTime()
 
@@ -209,107 +236,102 @@ class LichDatChoWidget(QWidget):
         conn = get_conn()
         cur = conn.cursor()
 
-        # kiểm tra xe trùng lịch
-        cur.execute("""
-        SELECT COUNT(*)
-        FROM LichDatCho
-        WHERE MaXe=?
-        AND TrangThaiLich IN ('Đã đặt','Đã xác nhận','Đang sạc')
-        AND (
-            (? BETWEEN GioBatDau AND GioKetThuc)
-            OR
-            (? BETWEEN GioBatDau AND GioKetThuc)
-            OR
-            (GioBatDau BETWEEN ? AND ?)
-        )
-        """,
-                    (
-                        ma_xe,
-                        bd.strftime("%Y-%m-%d %H:%M:%S"),
-                        kt.strftime("%Y-%m-%d %H:%M:%S"),
-                        bd.strftime("%Y-%m-%d %H:%M:%S"),
-                        kt.strftime("%Y-%m-%d %H:%M:%S")
-                    ))
-
-        if cur.fetchone()[0] > 0:
-            conn.close()
-            QMessageBox.warning(self, "Lỗi", "Xe đã có lịch trong khoảng thời gian này.")
-            return
-
-        # kiểm tra cổng trùng lịch
-        cur.execute("""
-        SELECT COUNT(*)
-        FROM LichDatCho
-        WHERE MaCong=?
-        AND TrangThaiLich IN ('Đã đặt','Đã xác nhận','Đang sạc')
-        AND (
-            (? BETWEEN GioBatDau AND GioKetThuc)
-            OR
-            (? BETWEEN GioBatDau AND GioKetThuc)
-            OR
-            (GioBatDau BETWEEN ? AND ?)
-        )
-        """,
-                    (
-                        ma_cong,
-                        bd.strftime("%Y-%m-%d %H:%M:%S"),
-                        kt.strftime("%Y-%m-%d %H:%M:%S"),
-                        bd.strftime("%Y-%m-%d %H:%M:%S"),
-                        kt.strftime("%Y-%m-%d %H:%M:%S")
-                    ))
-
-        if cur.fetchone()[0] > 0:
-            conn.close()
-            QMessageBox.warning(self, "Lỗi", "Cổng sạc đã được đặt.")
-            return
-
-        # sinh mã lịch
-        cur.execute("""
-            SELECT IFNULL(MAX(CAST(SUBSTR(MaLichDat,3) AS INTEGER)),0)
+        try:
+            # kiểm tra xe trùng lịch
+            cur.execute("""
+            SELECT COUNT(*)
             FROM LichDatCho
-        """)
-
-        stt = cur.fetchone()[0] + 1
-        ma_lich = f"LD{stt:03d}"
-
-        cur.execute("""
-            INSERT INTO LichDatCho
-            (
-                MaLichDat,
-                MaXe,
-                MaCong,
-                GioBatDau,
-                GioKetThuc,
-                TrangThaiLich
+            WHERE MaXe=?
+            AND TrangThaiLich IN ('Đã đặt','Đã xác nhận','Đang sạc')
+            AND (
+                (? BETWEEN GioBatDau AND GioKetThuc)
+                OR
+                (? BETWEEN GioBatDau AND GioKetThuc)
+                OR
+                (GioBatDau BETWEEN ? AND ?)
             )
-            VALUES (?,?,?,?,?,?)
-        """,
-                    (
-                        ma_lich,
-                        ma_xe,
-                        ma_cong,
-                        bd.strftime("%Y-%m-%d %H:%M:%S"),
-                        kt.strftime("%Y-%m-%d %H:%M:%S"),
-                        "Đã xác nhận"
-                    ))
+            """,
+                        (
+                            ma_xe,
+                            bd.strftime("%Y-%m-%d %H:%M:%S"),
+                            kt.strftime("%Y-%m-%d %H:%M:%S"),
+                            bd.strftime("%Y-%m-%d %H:%M:%S"),
+                            kt.strftime("%Y-%m-%d %H:%M:%S")
+                        ))
 
-        cur.execute("""
-            UPDATE CONG_SAC
-            SET TrangThaiCong='Đã đặt'
+            if cur.fetchone()[0] > 0:
+                QMessageBox.warning(self, "Lỗi", "Xe đã có lịch trong khoảng thời gian này.")
+                return
+
+            # kiểm tra cổng trùng lịch
+            cur.execute("""
+            SELECT COUNT(*)
+            FROM LichDatCho
             WHERE MaCong=?
-        """, (ma_cong,))
+            AND TrangThaiLich IN ('Đã đặt','Đã xác nhận','Đang sạc')
+            AND (
+                (? BETWEEN GioBatDau AND GioKetThuc)
+                OR
+                (? BETWEEN GioBatDau AND GioKetThuc)
+                OR
+                (GioBatDau BETWEEN ? AND ?)
+            )
+            """,
+                        (
+                            ma_cong,
+                            bd.strftime("%Y-%m-%d %H:%M:%S"),
+                            kt.strftime("%Y-%m-%d %H:%M:%S"),
+                            bd.strftime("%Y-%m-%d %H:%M:%S"),
+                            kt.strftime("%Y-%m-%d %H:%M:%S")
+                        ))
 
-        conn.commit()
-        conn.close()
+            if cur.fetchone()[0] > 0:
+                QMessageBox.warning(self, "Lỗi", "Cổng sạc đã được đặt.")
+                return
 
-        QMessageBox.information(
-            self,
-            "Thành công",
-            f"Đặt lịch {ma_lich} thành công."
-        )
+            # sinh mã lịch
+            cur.execute("""
+                SELECT IFNULL(MAX(CAST(SUBSTR(MaLichDat,3) AS INTEGER)),0)
+                FROM LichDatCho
+            """)
 
-        self.load_cong()
-        self.load_data()
+            stt = cur.fetchone()[0] + 1
+            ma_lich = f"LD{stt:03d}"
+
+            cur.execute("""
+                INSERT INTO LichDatCho
+                (
+                    MaLichDat,
+                    MaXe,
+                    MaCong,
+                    GioBatDau,
+                    GioKetThuc,
+                    TrangThaiLich
+                )
+                VALUES (?,?,?,?,?,?)
+            """,
+                        (
+                            ma_lich,
+                            ma_xe,
+                            ma_cong,
+                            bd.strftime("%Y-%m-%d %H:%M:%S"),
+                            kt.strftime("%Y-%m-%d %H:%M:%S"),
+                            "Đã đặt"
+                        ))
+
+            conn.commit()
+            QMessageBox.information(
+                self,
+                "Thành công",
+                f"Đặt lịch {ma_lich} thành công."
+            )
+            self.load_cong()
+            self.load_data()
+        except Exception as e:
+            conn.rollback()
+            QMessageBox.critical(self, "Lỗi", f"Không thể đặt lịch: {e}")
+        finally:
+            conn.close()
 
     def huy_lich(self):
         row = self.tbl_lich.currentRow()
@@ -318,52 +340,53 @@ class LichDatChoWidget(QWidget):
             return
         ma_lich = self.tbl_lich.item(row, 0).text()
         trang_thai = self.tbl_lich.item(row, 5).text()
-        if trang_thai != "Đã xác nhận":
+        if trang_thai not in ("Đã đặt", "Đã xác nhận"):
             QMessageBox.warning(self, "Không thể hủy", f"Lịch đang ở trạng thái '{trang_thai}', không thể hủy.")
             return
 
         reply = QMessageBox.question(self, "Xác nhận hủy", f"Hủy lịch {ma_lich}?",
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
-
             conn = get_conn()
             cur = conn.cursor()
-
-            # Lấy cổng của lịch
-            cur.execute("""
-                SELECT MaCong
-                FROM LichDatCho
-                WHERE MaLichDat=?
-            """, (ma_lich,))
-            result = cur.fetchone()
-
-            if result:
-                ma_cong = result[0]
-
-                # Hủy lịch
+            try:
+                # Lấy cổng của lịch
                 cur.execute("""
-                    UPDATE LichDatCho
-                    SET TrangThaiLich='Đã hủy'
+                    SELECT MaCong
+                    FROM LichDatCho
                     WHERE MaLichDat=?
                 """, (ma_lich,))
+                result = cur.fetchone()
 
-                # Trả cổng về trạng thái Trống
-                cur.execute("""
-                    UPDATE CONG_SAC
-                    SET TrangThaiCong='Trống'
-                    WHERE MaCong=?
-                """, (ma_cong,))
+                if result:
+                    ma_cong = result[0]
 
-            conn.commit()
-            conn.close()
+                    # Hủy lịch
+                    cur.execute("""
+                        UPDATE LichDatCho
+                        SET TrangThaiLich='Đã hủy'
+                        WHERE MaLichDat=?
+                    """, (ma_lich,))
 
-            QMessageBox.information(
-                self,
-                "Đã hủy",
-                f"Lịch {ma_lich} đã được hủy."
-            )
+                    # Trả cổng về trạng thái Trống
+                    cur.execute("""
+                        UPDATE CONG_SAC
+                        SET TrangThaiCong='Trống'
+                        WHERE MaCong=?
+                    """, (ma_cong,))
 
-            self.load_data()
+                conn.commit()
+                QMessageBox.information(
+                    self,
+                    "Đã hủy",
+                    f"Lịch {ma_lich} đã được hủy."
+                )
+                self.load_data()
+            except Exception as e:
+                conn.rollback()
+                QMessageBox.critical(self, "Lỗi", f"Không thể hủy lịch: {e}")
+            finally:
+                conn.close()
 
     def load_data(self):
         conn = get_conn()
@@ -382,6 +405,7 @@ class LichDatChoWidget(QWidget):
             rows = cur.fetchall()
             self.tbl_lich.setRowCount(len(rows))
             color_map = {
+                "Đã đặt": "#3b82f6",
                 "Đã xác nhận": "#3b82f6",
                 "Đã đến": "#8b5cf6",
                 "Đang sạc": "#10b981",
@@ -485,10 +509,13 @@ class LichDatChoWidget(QWidget):
         tbl = QTableWidget()
         tbl.setColumnCount(len(headers))
         tbl.setHorizontalHeaderLabels(headers)
+        tbl.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         tbl.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         tbl.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         tbl.setStyleSheet(self._table_style())
+        tbl.setAlternatingRowColors(True)
+        tbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         return tbl
 
     def bat_dau_sac(self):

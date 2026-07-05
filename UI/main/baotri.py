@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
     QMessageBox, QGroupBox, QLineEdit, QSplitter, QFormLayout,
-    QPlainTextEdit
+    QPlainTextEdit, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
@@ -43,6 +43,7 @@ class BaoTriWidget(QWidget):
         # ── Form ghi nhận bảo trì mới ──────────────────────────────────────
         form_box = QGroupBox("Ghi nhận bảo trì mới")
         form_box.setStyleSheet(self._group_style())
+        form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         form_layout = QFormLayout(form_box)
         form_layout.setSpacing(10)
         form_layout.setContentsMargins(16, 20, 16, 16)
@@ -65,32 +66,39 @@ class BaoTriWidget(QWidget):
 
         btn_row = QHBoxLayout()
         btn_ghi = QPushButton("✅ Ghi nhận bảo trì")
+        btn_ghi.setMinimumHeight(38)
         btn_ghi.setStyleSheet(self._btn_style("#10b981"))
         btn_ghi.clicked.connect(self.ghi_bao_tri)
         btn_row.addStretch()
         btn_row.addWidget(btn_ghi)
         form_layout.addRow("", btn_row)
 
-        splitter.addWidget(form_box)
+        layout.addWidget(form_box)
 
         # ── Bảng lịch sử bảo trì ───────────────────────────────────────────
         list_box = QGroupBox("Lịch sử bảo trì")
         list_box.setStyleSheet(self._group_style())
+        list_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         list_layout = QVBoxLayout(list_box)
         list_layout.setContentsMargins(12, 20, 12, 12)
+        list_layout.setSpacing(10)
 
         self.tbl = QTableWidget()
         self.tbl.setColumnCount(6)
         self.tbl.setHorizontalHeaderLabels(
             ["Mã Bảo Trì", "Cổng Sạc", "Trạm", "Ngày Bảo Trì", "Nội Dung", "Kết Quả"]
         )
+        self.tbl.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tbl.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tbl.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.tbl.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.tbl.setStyleSheet(self._table_style())
-        list_layout.addWidget(self.tbl)
+        self.tbl.setAlternatingRowColors(True)
+        self.tbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        list_layout.addWidget(self.tbl, 1)
 
         btn_refresh = QPushButton("🔄 Làm mới")
+        btn_refresh.setMinimumHeight(38)
         btn_refresh.setStyleSheet(self._btn_style("#475569"))
         btn_refresh.clicked.connect(self.load_data)
         btn_rf_row = QHBoxLayout()
@@ -98,9 +106,7 @@ class BaoTriWidget(QWidget):
         btn_rf_row.addWidget(btn_refresh)
         list_layout.addLayout(btn_rf_row)
 
-        splitter.addWidget(list_box)
-        splitter.setSizes([260, 340])
-        layout.addWidget(splitter)
+        layout.addWidget(list_box, 1)
 
         self.load_cong_list()
 

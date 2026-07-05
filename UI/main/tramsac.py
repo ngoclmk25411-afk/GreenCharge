@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget,
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
     QMessageBox, QGroupBox, QLineEdit, QSplitter, QFormLayout, QDialog,
-    QDialogButtonBox
+    QDialogButtonBox, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
@@ -12,7 +12,6 @@ from main.shared_theme import (
     GROUP_STYLE, TABLE_STYLE, COMBO_STYLE, INPUT_STYLE,
     DIALOG_STYLE, TITLE_STYLE, LBL_STYLE, btn_style, status_color, G1, G2, G_M, G_B, G_L
 )
-
 
 DB_PATH = "datasets/data.db"
 
@@ -28,20 +27,7 @@ class TramDialog(QDialog):
         self.tram_data = tram_data  # None = thêm mới, dict = chỉnh sửa
         self.setWindowTitle("Thêm trạm sạc mới" if not tram_data else "Chỉnh sửa trạm sạc")
         self.setMinimumWidth(420)
-        self.setStyleSheet("""
-            QDialog { background-color: #1e293b; color: #e2e8f0; }
-            QLabel { color: #94a3b8; }
-            QLineEdit, QComboBox {
-                background-color: #334155; color: #e2e8f0;
-                border: 1px solid #475569; border-radius: 6px;
-                padding: 6px 10px;
-            }
-            QDialogButtonBox QPushButton {
-                background-color: #059669; color: #0f172a;
-                border: none; border-radius: 6px;
-                padding: 6px 18px; font-weight: bold;
-            }
-        """)
+        self.setStyleSheet(DIALOG_STYLE)
         self.setup_ui()
 
     def setup_ui(self):
@@ -95,36 +81,58 @@ class TramSacWidget(QWidget):
         layout.setSpacing(12)
         layout.setContentsMargins(16, 16, 16, 16)
 
-        title = QLabel("🔌 Quản lý Trạm & Cổng Sạc")
+        role = self.user["VaiTro"]
+
+        title_text = "🔌 Quản lý Trạm & Cổng Sạc" if role in ("ChuDauTu", "NhanVien") else "🔌 Trạm Sạc & Cổng Sạc"
+        title = QLabel(title_text)
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
         title.setStyleSheet("color: #059669;")
+        title.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(title)
 
-        role = self.user["VaiTro"]
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        if role == "KhachHang":
+            hint = QLabel(
+                "Xem trạng thái các trạm và cổng sạc hiện có. Chọn một trạm bên trái để xem cổng sạc tương ứng.")
+            hint.setWordWrap(True)
+            hint.setStyleSheet("color: #6b7280; font-size: 12px;")
+            hint.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            layout.addWidget(hint)
+
+        # ── Hàng chứa 2 khối trái/phải, tỷ lệ cố định 45/55 ──────────────
+        row = QHBoxLayout()
+        row.setSpacing(14)
 
         # ── Bên trái: Danh sách trạm ──
         left = QGroupBox("Danh sách Trạm Sạc")
         left.setStyleSheet(self._group_style())
+        left.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(14, 20, 14, 14)
+        left_layout.setSpacing(10)
 
         self.tbl_tram = QTableWidget()
         self.tbl_tram.setColumnCount(4)
         self.tbl_tram.setHorizontalHeaderLabels(["Mã Trạm", "Tên Trạm", "Địa Chỉ", "Trạng Thái"])
+        self.tbl_tram.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tbl_tram.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tbl_tram.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.tbl_tram.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.tbl_tram.setStyleSheet(self._table_style())
+        self.tbl_tram.setAlternatingRowColors(True)
+        self.tbl_tram.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.tbl_tram.selectionModel().selectionChanged.connect(self.on_tram_selected)
-        left_layout.addWidget(self.tbl_tram)
+        left_layout.addWidget(self.tbl_tram, 1)
 
         if role == "ChuDauTu":
             # Chủ đầu tư: thêm mới / chỉnh sửa trạm
             btn_row = QHBoxLayout()
+            btn_row.setSpacing(10)
             btn_them = QPushButton("➕ Thêm Trạm Mới")
+            btn_them.setMinimumHeight(38)
             btn_them.setStyleSheet(self._btn_style("#10b981"))
             btn_them.clicked.connect(self.them_tram)
             btn_sua = QPushButton("✏️ Chỉnh Sửa")
+            btn_sua.setMinimumHeight(38)
             btn_sua.setStyleSheet(self._btn_style("#0ea5e9"))
             btn_sua.clicked.connect(self.sua_tram)
             btn_row.addWidget(btn_them)
@@ -135,56 +143,66 @@ class TramSacWidget(QWidget):
             grp_tram = QGroupBox("Cập nhật trạng thái Trạm")
             grp_tram.setStyleSheet(self._group_style())
             lay_tram = QHBoxLayout(grp_tram)
+            lay_tram.setSpacing(10)
             self.cmb_tt_tram = QComboBox()
             self.cmb_tt_tram.addItems(["Hoạt động", "Tạm ngừng", "Bảo trì"])
             self.cmb_tt_tram.setStyleSheet(self._combo_style())
             btn_tt = QPushButton("Cập nhật")
+            btn_tt.setMinimumHeight(38)
             btn_tt.setStyleSheet(self._btn_style("#f59e0b"))
             btn_tt.clicked.connect(self.update_tram_status)
-            lay_tram.addWidget(self.cmb_tt_tram)
+            lay_tram.addWidget(self.cmb_tt_tram, 1)
             lay_tram.addWidget(btn_tt)
             left_layout.addWidget(grp_tram)
 
-        splitter.addWidget(left)
+        row.addWidget(left, 45)
 
         # ── Bên phải: Danh sách cổng sạc ──
         right = QGroupBox("Danh sách Cổng Sạc (click vào trạm để xem)")
         right.setStyleSheet(self._group_style())
+        right.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         right_layout = QVBoxLayout(right)
+        right_layout.setContentsMargins(14, 20, 14, 14)
+        right_layout.setSpacing(10)
 
         self.tbl_cong = QTableWidget()
         self.tbl_cong.setColumnCount(5)
         self.tbl_cong.setHorizontalHeaderLabels(["Mã Cổng", "Chuẩn Sạc", "Công Suất (kW)", "Loại", "Trạng Thái"])
+        self.tbl_cong.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tbl_cong.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tbl_cong.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.tbl_cong.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.tbl_cong.setStyleSheet(self._table_style())
-        right_layout.addWidget(self.tbl_cong)
+        self.tbl_cong.setAlternatingRowColors(True)
+        self.tbl_cong.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        right_layout.addWidget(self.tbl_cong, 1)
 
         if role == "NhanVien":
             grp_cong = QGroupBox("Cập nhật Cổng (Chọn cổng ở trên)")
             grp_cong.setStyleSheet(self._group_style())
             lay_cong = QHBoxLayout(grp_cong)
+            lay_cong.setSpacing(10)
             self.cmb_tt_cong = QComboBox()
             self.cmb_tt_cong.addItems(["Trống", "Đang sạc", "Bảo trì", "Đang hỏng"])
             self.cmb_tt_cong.setStyleSheet(self._combo_style())
             btn_cong = QPushButton("Cập nhật")
+            btn_cong.setMinimumHeight(38)
             btn_cong.setStyleSheet(self._btn_style("#10b981"))
             btn_cong.clicked.connect(self.update_cong_status)
-            lay_cong.addWidget(self.cmb_tt_cong)
+            lay_cong.addWidget(self.cmb_tt_cong, 1)
             lay_cong.addWidget(btn_cong)
             right_layout.addWidget(grp_cong)
 
-
         if role in ["NhanVien", "ChuDauTu"]:
             btn_them_cong = QPushButton("➕ Thêm Cổng Sạc Mới")
+            btn_them_cong.setMinimumHeight(38)
             btn_them_cong.setStyleSheet(self._btn_style("#0ea5e9"))
             btn_them_cong.clicked.connect(self.them_cong)
             right_layout.addWidget(btn_them_cong)
 
-        splitter.addWidget(right)
-        splitter.setSizes([450, 550])
-        layout.addWidget(splitter)
+        row.addWidget(right, 55)
+
+        layout.addLayout(row, 1)
 
     # ── Load dữ liệu ──────────────────────────────────────────────────────────
     def them_cong(self):
@@ -193,28 +211,31 @@ class TramSacWidget(QWidget):
             QMessageBox.warning(self, "Chưa chọn", "Vui lòng chọn một trạm để thêm cổng.")
             return
         ma_tram = self.tbl_tram.item(row, 0).text()
-        
+
         from PyQt6.QtWidgets import QInputDialog
-        chuan, ok1 = QInputDialog.getItem(self, "Thêm cổng", "Chuẩn sạc:", ["CCS2", "CHAdeMO", "Type 2", "GB/T"], 0, False)
+        chuan, ok1 = QInputDialog.getItem(self, "Thêm cổng", "Chuẩn sạc:", ["CCS2", "CHAdeMO", "Type 2", "GB/T"], 0,
+                                          False)
         if not ok1: return
-        
+
         cong_suat, ok2 = QInputDialog.getDouble(self, "Thêm cổng", "Công suất (kW):", 22.0, 3.0, 350.0, 1)
         if not ok2: return
-        
+
         loai = "DC" if cong_suat >= 50 else "AC"
-        
+
         conn = get_conn()
         cur = conn.cursor()
-        
+
         cur.execute("SELECT MaChuanSac FROM CHUAN_SAC WHERE TenChuan=?", (chuan,))
         mc = cur.fetchone()
         ma_chuan = mc[0] if mc else "CH001"
-        
+
         cur.execute("SELECT COUNT(*) FROM CONG_SAC")
         n = cur.fetchone()[0]
-        ma_cong = f"CS{n+1:03d}"
-        
-        cur.execute("INSERT INTO CONG_SAC (MaCong, MaTram, MaChuanSac, CongSuat, LoaiCaySac, TrangThaiCong) VALUES (?,?,?,?,?,?)", (ma_cong, ma_tram, ma_chuan, cong_suat, loai, 'Trống'))
+        ma_cong = f"CS{n + 1:03d}"
+
+        cur.execute(
+            "INSERT INTO CONG_SAC (MaCong, MaTram, MaChuanSac, CongSuat, LoaiCaySac, TrangThaiCong) VALUES (?,?,?,?,?,?)",
+            (ma_cong, ma_tram, ma_chuan, cong_suat, loai, 'Trống'))
         conn.commit()
         conn.close()
         QMessageBox.information(self, "Thành công", f"Đã thêm cổng {ma_cong} cho trạm {ma_tram}.")
@@ -231,11 +252,11 @@ class TramSacWidget(QWidget):
         elif role == "NhanVien":
             # Chỉ hiện trạm mà nhân viên phụ trách
             cur.execute("""
-                SELECT ts.MaTram, ts.TenTram, ts.DiaChi, ts.TrangThaiHoatDong
-                FROM TRAM_SAC ts
-                JOIN NHAN_VIEN nv ON ts.MaTram = nv.MaTram
-                WHERE nv.MaNguoiDung=?
-            """, (ma,))
+                        SELECT ts.MaTram, ts.TenTram, ts.DiaChi, ts.TrangThaiHoatDong
+                        FROM TRAM_SAC ts
+                                 JOIN NHAN_VIEN nv ON ts.MaTram = nv.MaTram
+                        WHERE nv.MaNguoiDung = ?
+                        """, (ma,))
         else:
             cur.execute("SELECT MaTram, TenTram, DiaChi, TrangThaiHoatDong FROM TRAM_SAC")
 
@@ -262,11 +283,11 @@ class TramSacWidget(QWidget):
         conn = get_conn()
         cur = conn.cursor()
         cur.execute("""
-            SELECT cs.MaCong, ch.TenChuan, cs.CongSuat, cs.LoaiCaySac, cs.TrangThaiCong
-            FROM CONG_SAC cs
-            JOIN CHUAN_SAC ch ON cs.MaChuanSac = ch.MaChuanSac
-            WHERE cs.MaTram = ?
-        """, (ma_tram,))
+                    SELECT cs.MaCong, ch.TenChuan, cs.CongSuat, cs.LoaiCaySac, cs.TrangThaiCong
+                    FROM CONG_SAC cs
+                             JOIN CHUAN_SAC ch ON cs.MaChuanSac = ch.MaChuanSac
+                    WHERE cs.MaTram = ?
+                    """, (ma_tram,))
         rows = cur.fetchall()
         conn.close()
 
@@ -293,9 +314,9 @@ class TramSacWidget(QWidget):
         cur = conn.cursor()
         try:
             cur.execute("""
-                INSERT INTO TRAM_SAC (MaTram, TenTram, DiaChi, MaNguoiDung, TrangThaiHoatDong)
-                VALUES (?,?,?,?,?)
-            """, (d["ma"], d["ten"], d["dia_chi"], self.user["MaNguoiDung"], d["trang_thai"]))
+                        INSERT INTO TRAM_SAC (MaTram, TenTram, DiaChi, MaNguoiDung, TrangThaiHoatDong)
+                        VALUES (?, ?, ?, ?, ?)
+                        """, (d["ma"], d["ten"], d["dia_chi"], self.user["MaNguoiDung"], d["trang_thai"]))
             conn.commit()
             QMessageBox.information(self, "Thành công", f"Đã thêm trạm {d['ma']} — {d['ten']}")
             self.load_data()
@@ -318,9 +339,12 @@ class TramSacWidget(QWidget):
         cur = conn.cursor()
         try:
             cur.execute("""
-                UPDATE TRAM_SAC SET TenTram=?, DiaChi=?, TrangThaiHoatDong=?
-                WHERE MaTram=?
-            """, (d["ten"], d["dia_chi"], d["trang_thai"], data[0]))
+                        UPDATE TRAM_SAC
+                        SET TenTram=?,
+                            DiaChi=?,
+                            TrangThaiHoatDong=?
+                        WHERE MaTram = ?
+                        """, (d["ten"], d["dia_chi"], d["trang_thai"], data[0]))
             conn.commit()
             QMessageBox.information(self, "Đã cập nhật", f"Trạm {data[0]} đã được cập nhật.")
             self.load_data()
@@ -363,10 +387,14 @@ class TramSacWidget(QWidget):
             self.load_cong(self.tbl_tram.item(tram_row, 0).text())
 
     # ── Style helpers ─────────────────────────────────────────────────────────
-    def _group_style(self): return GROUP_STYLE
+    def _group_style(self):
+        return GROUP_STYLE
 
-    def _table_style(self): return TABLE_STYLE
+    def _table_style(self):
+        return TABLE_STYLE
 
-    def _combo_style(self): return COMBO_STYLE
+    def _combo_style(self):
+        return COMBO_STYLE
 
-    def _btn_style(self, color=None): return btn_style(color)
+    def _btn_style(self, color=None):
+        return btn_style(color)
