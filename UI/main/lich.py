@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QGroupBox, QDateTimeEdit, QFormLayout, QSplitter, QFrame, QLineEdit,
     QSizePolicy
 )
-from PyQt6.QtCore import Qt, QDateTime
+from PyQt6.QtCore import Qt, QTimer, QDateTime
 from PyQt6.QtGui import QColor, QFont
 from main.shared_theme import (
     GROUP_STYLE, TABLE_STYLE, COMBO_STYLE, INPUT_STYLE,
@@ -28,6 +28,12 @@ class LichDatChoWidget(QWidget):
         self.setup_ui()
         self.load_data()
 
+        if self.user["VaiTro"] == "KhachHang":
+            self.auto_check_timer = QTimer(self)
+            self.auto_check_timer.setInterval(10000)  # 10 giây
+            self.auto_check_timer.timeout.connect(self.auto_check_late_bookings_timer)
+            self.auto_check_timer.start()
+
     def setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
@@ -35,7 +41,7 @@ class LichDatChoWidget(QWidget):
 
         title = QLabel("📅 Quản lý Đặt Lịch Sạc")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #059669;")
+        title.setStyleSheet(TITLE_STYLE)
         layout.addWidget(title)
 
         role = self.user["VaiTro"]
@@ -46,7 +52,8 @@ class LichDatChoWidget(QWidget):
             form_box.setStyleSheet(self._group_style())
             form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             form_layout = QFormLayout(form_box)
-            form_layout.setSpacing(10)
+            form_layout.setVerticalSpacing(18)
+            form_layout.setHorizontalSpacing(12)
             form_layout.setContentsMargins(16, 20, 16, 16)
 
             self.cmb_xe = QComboBox()
@@ -389,8 +396,12 @@ class LichDatChoWidget(QWidget):
                 conn.close()
 
     def load_data(self):
+        # Tự động check và hủy lịch trễ
+        self.auto_check_late_bookings()
+
         conn = get_conn()
         cur = conn.cursor()
+
         role = self.user["VaiTro"]
         ma = self.user["MaNguoiDung"]
 
@@ -633,6 +644,33 @@ class LichDatChoWidget(QWidget):
         )
 
         self.load_data()
+
+    def auto_check_late_bookings_timer(self):
+        cancelled = self.auto_check_late_bookings()
+        if cancelled:
+            self.load_data()
+
+    def auto_check_late_bookings(self):
+        conn = get_conn()
+        cur = conn.cursor()
+        from datetime import datetime, timedelta
+        threshold = (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("""
+            SELECT MaLichDat, MaCong
+            FROM LichDatCho
+            WHERE TrangThaiLich IN ('Đã đặt', 'Đã xác nhận')
+              AND GioBatDau < ?
+        """, (threshold,))
+        late_bookings = cur.fetchall()
+        if not late_bookings:
+            conn.close()
+            return False
+        for l_id, c_id in late_bookings:
+            cur.execute("UPDATE LichDatCho SET TrangThaiLich='Đã hủy' WHERE MaLichDat=?", (l_id,))
+            cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (c_id,))
+        conn.commit()
+        conn.close()
+        return True
 
     def _group_style(self): return GROUP_STYLE
 

@@ -34,7 +34,7 @@ class ThuGomPinWidget(QWidget):
 
         title = QLabel("♻️ Thu Gom Pin & Điểm Xanh")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #059669;")
+        title.setStyleSheet(TITLE_STYLE)
         layout.addWidget(title)
 
         role = self.user["VaiTro"]
@@ -45,7 +45,8 @@ class ThuGomPinWidget(QWidget):
             form_box.setStyleSheet(self._group_style())
             form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
             form_layout = QFormLayout(form_box)
-            form_layout.setSpacing(10)
+            form_layout.setVerticalSpacing(18)
+            form_layout.setHorizontalSpacing(12)
             form_layout.setContentsMargins(16, 20, 16, 16)
 
             self.cmb_kh = QComboBox()

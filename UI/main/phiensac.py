@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem, QPushButton, QComboBox, QHeaderView,
     QMessageBox, QGroupBox, QDoubleSpinBox, QSplitter, QFormLayout, QSizePolicy
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QFont
 from main.shared_theme import (
     GROUP_STYLE, TABLE_STYLE, COMBO_STYLE, INPUT_STYLE,
@@ -27,6 +27,12 @@ class PhienSacWidget(QWidget):
         self.setup_ui()
         self.load_data()
 
+        if self.user["VaiTro"] == "KhachHang":
+            self.auto_check_timer = QTimer(self)
+            self.auto_check_timer.setInterval(10000)  # 10 giây
+            self.auto_check_timer.timeout.connect(self.on_timer_timeout)
+            self.auto_check_timer.start()
+
     def setup_ui(self):
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
@@ -34,7 +40,7 @@ class PhienSacWidget(QWidget):
 
         title = QLabel("⚡ Quản lý Phiên Sạc")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #059669;")
+        title.setStyleSheet(TITLE_STYLE)
         layout.addWidget(title)
 
         role = self.user["VaiTro"]
@@ -165,8 +171,17 @@ class PhienSacWidget(QWidget):
             layout.addWidget(box, 1)
 
     def load_data(self):
+        # Tự động check và ngắt phiên quá hạn
+        ended = self.auto_check_overtime_sessions(reload=False)
+        if ended:
+            self.switch_to_hoadon_tab()
+
+        # Tự động hủy lịch sạc trễ quá 15 phút
+        self.auto_check_late_bookings()
+
         conn = get_conn()
         cur = conn.cursor()
+
         role = self.user["VaiTro"]
         ma = self.user["MaNguoiDung"]
 
@@ -594,19 +609,36 @@ class PhienSacWidget(QWidget):
 
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT MaLichDat, MaBieuGia, GioBatDau FROM PhienSac WHERE MaPhien=?", (ma_phien,))
+        cur.execute("""
+            SELECT ps.MaLichDat, ps.MaBieuGia, ps.GioBatDau, l.GioKetThuc
+            FROM PhienSac ps
+            LEFT JOIN LichDatCho l ON ps.MaLichDat = l.MaLichDat
+            WHERE ps.MaPhien=?
+        """, (ma_phien,))
         phien = cur.fetchone()
         if not phien:
             conn.close()
             return
-        ma_lich, ma_bg, gio_bat_dau_str = phien
+        ma_lich, ma_bg, gio_bat_dau_str, gio_ket_thuc_lich_str = phien
 
         # Tính số giờ đã sạc
         try:
             gio_bat_dau = datetime.strptime(gio_bat_dau_str, "%Y-%m-%d %H:%M:%S")
         except:
             gio_bat_dau = now
-        elapsed_hours = max((now - gio_bat_dau).total_seconds() / 3600, 0.01)
+
+        # Xác định mốc kết thúc sạc (tự động ngắt khi hết giờ hẹn sạc)
+        actual_end = now
+        if gio_ket_thuc_lich_str:
+            try:
+                gio_ket_thuc_lich = datetime.strptime(gio_ket_thuc_lich_str, "%Y-%m-%d %H:%M:%S")
+                if now > gio_ket_thuc_lich:
+                    actual_end = gio_ket_thuc_lich
+            except Exception:
+                pass
+
+        elapsed_hours = max((actual_end - gio_bat_dau).total_seconds() / 3600, 0.01)
+        now_str = actual_end.strftime("%Y-%m-%d %H:%M:%S")
 
         # Lấy công suất cổng sạc (kW) để tính kWh
         cong_suat = 7.0  # mặc định 7kW
@@ -686,9 +718,167 @@ class PhienSacWidget(QWidget):
             f"🔋 Tiêu thụ: {kwh} kWh\n"
             f"💵 Tổng tiền: {int(tong_tien):,} đ\n"
             f"📋 Hóa đơn: {ma_hd}\n\n"
-            f"👉 Chuyển sang tab Hóa Đơn để thanh toán."
+            f"👉 Hệ thống đang tự động chuyển sang tab Hóa Đơn để bạn thanh toán."
         )
         self.load_data()
+        self.switch_to_hoadon_tab()
+
+    def switch_to_hoadon_tab(self):
+        from PyQt6.QtWidgets import QTabWidget
+        parent = self.parent()
+        while parent:
+            if isinstance(parent, QTabWidget):
+                for i in range(parent.count()):
+                    if "Hóa Đơn" in parent.tabText(i):
+                        parent.setCurrentIndex(i)
+                        return True
+            parent = parent.parent()
+        return False
+
+    def auto_check_overtime_sessions(self, reload=True):
+        role = self.user["VaiTro"]
+        if role != "KhachHang":
+            return False
+
+        ma_kh = self.user["MaNguoiDung"]
+        conn = get_conn()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT ps.MaPhien, ps.GioBatDau, ps.MaBieuGia, l.MaLichDat, l.GioKetThuc, l.MaCong
+            FROM PhienSac ps
+            JOIN LichDatCho l ON ps.MaLichDat = l.MaLichDat
+            JOIN Xe x ON l.MaXe = x.MaXe
+            WHERE x.MaNguoiDung=?
+              AND ps.TrangThaiPhien='Đang sạc'
+        """, (ma_kh,))
+
+        active_sessions = cur.fetchall()
+
+        overtime_session = None
+        from datetime import datetime
+        now = datetime.now()
+
+        for row in active_sessions:
+            ma_phien, gio_bat_dau_str, ma_bg, ma_lich, gio_ket_thuc_lich_str, ma_cong = row
+            try:
+                gio_ket_thuc_lich = datetime.strptime(gio_ket_thuc_lich_str, "%Y-%m-%d %H:%M:%S")
+                if now >= gio_ket_thuc_lich:
+                    overtime_session = row
+                    break
+            except Exception:
+                pass
+
+        if not overtime_session:
+            conn.close()
+            return False
+
+        ma_phien, gio_bat_dau_str, ma_bg, ma_lich, gio_ket_thuc_lich_str, ma_cong = overtime_session
+
+        try:
+            gio_bat_dau = datetime.strptime(gio_bat_dau_str, "%Y-%m-%d %H:%M:%S")
+            gio_ket_thuc_lich = datetime.strptime(gio_ket_thuc_lich_str, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            conn.close()
+            return False
+
+        elapsed_hours = max((gio_ket_thuc_lich - gio_bat_dau).total_seconds() / 3600, 0.01)
+        now_str = gio_ket_thuc_lich.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Lấy công suất
+        cong_suat = 7.0
+        cur.execute("SELECT CongSuat FROM CONG_SAC WHERE MaCong=?", (ma_cong,))
+        cs = cur.fetchone()
+        if cs:
+            cong_suat = float(cs[0])
+
+        kwh = round(elapsed_hours * cong_suat, 2)
+
+        # Lấy đơn giá
+        cur.execute("SELECT DonGiaKwh FROM BieuGiaDien WHERE MaBieuGia=?", (ma_bg,))
+        gia = cur.fetchone()
+        don_gia = float(gia[0]) if gia else 3000.0
+
+        tong_tien = round(kwh * don_gia, 2)
+        phi_app = round(tong_tien * 0.05, 2)
+        doanh_thu = round(tong_tien * 0.95, 2)
+
+        # Cập nhật phiên sạc
+        cur.execute("""
+            UPDATE PhienSac SET GioKetThuc=?, SoKwhTieuThu=?, TrangThaiPhien='Hoàn thành'
+            WHERE MaPhien=?
+        """, (now_str, kwh, ma_phien))
+
+        # Sinh mã hóa đơn
+        cur.execute("SELECT COUNT(*) FROM HoaDon")
+        n_hd = cur.fetchone()[0]
+        ma_hd = f"HD{n_hd+1:03d}"
+
+        cur.execute("""
+            INSERT INTO HoaDon
+            (MaHD, MaPhien, MaNguoiDung, TongTienGoc, SoDiemTieuThu, SoTienGiam,
+             TongTienThanhToan, PhiVanHanhApp, DoanhThuCDT, TrangThaiHD, NgayThanhToan, PhuongThucThanhToan)
+            VALUES (?,?,?,?,0,0,?,?,?,'Chưa thanh toán',?,'Tiền mặt')
+        """, (ma_hd, ma_phien, ma_kh, tong_tien, tong_tien, phi_app, doanh_thu, now_str))
+
+        # Trả cổng về Trống
+        cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (ma_cong,))
+
+        # Hoàn thành lịch
+        cur.execute("UPDATE LichDatCho SET TrangThaiLich='Hoàn thành' WHERE MaLichDat=?", (ma_lich,))
+
+        conn.commit()
+        conn.close()
+
+        QMessageBox.information(
+            self, "Hệ thống tự động ngắt kết nối 🔌",
+            f"Phiên sạc {ma_phien} đã tự động kết thúc do hết giờ đặt lịch!\n\n"
+            f"🔋 Tiêu thụ: {kwh} kWh\n"
+            f"💵 Tổng tiền: {int(tong_tien):,} đ\n"
+            f"📋 Hóa đơn: {ma_hd}\n\n"
+            f"👉 Hệ thống đang tự động chuyển sang tab Hóa Đơn để bạn thanh toán."
+        )
+
+        if reload:
+            self.load_data()
+            self.switch_to_hoadon_tab()
+
+        return True
+
+    def on_timer_timeout(self):
+        # 1. Kiểm tra tự động ngắt phiên sạc quá hạn
+        ended = self.auto_check_overtime_sessions(reload=False)
+        if ended:
+            self.load_data()
+            self.switch_to_hoadon_tab()
+            return
+
+        # 2. Kiểm tra tự động hủy lịch đặt trễ > 15 phút
+        cancelled = self.auto_check_late_bookings()
+        if cancelled:
+            self.load_data()
+
+    def auto_check_late_bookings(self):
+        conn = get_conn()
+        cur = conn.cursor()
+        from datetime import datetime, timedelta
+        threshold = (datetime.now() - timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("""
+            SELECT MaLichDat, MaCong
+            FROM LichDatCho
+            WHERE TrangThaiLich IN ('Đã đặt', 'Đã xác nhận')
+              AND GioBatDau < ?
+        """, (threshold,))
+        late_bookings = cur.fetchall()
+        if not late_bookings:
+            conn.close()
+            return False
+        for l_id, c_id in late_bookings:
+            cur.execute("UPDATE LichDatCho SET TrangThaiLich='Đã hủy' WHERE MaLichDat=?", (l_id,))
+            cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (c_id,))
+        conn.commit()
+        conn.close()
+        return True
 
     def _make_table(self, headers):
         tbl = QTableWidget()

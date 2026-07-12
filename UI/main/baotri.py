@@ -35,7 +35,7 @@ class BaoTriWidget(QWidget):
 
         title = QLabel("🔧 Lịch Sử Bảo Trì Cổng Sạc")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #059669;")
+        title.setStyleSheet(TITLE_STYLE)
         layout.addWidget(title)
 
         splitter = QSplitter(Qt.Orientation.Vertical)
@@ -45,7 +45,8 @@ class BaoTriWidget(QWidget):
         form_box.setStyleSheet(self._group_style())
         form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         form_layout = QFormLayout(form_box)
-        form_layout.setSpacing(10)
+        form_layout.setVerticalSpacing(18)
+        form_layout.setHorizontalSpacing(12)
         form_layout.setContentsMargins(16, 20, 16, 16)
 
         self.cmb_cong = QComboBox()
@@ -154,13 +155,13 @@ class BaoTriWidget(QWidget):
             VALUES (?,?,?,?,?,?)
         """, (ma_bt, ma_cong, ma_nv, ngay, noi_dung, ket_qua))
 
-        # Tự động cập nhật trạng thái cổng sang Bảo trì
-        cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Bảo trì' WHERE MaCong=?", (ma_cong,))
+        # Tự động cập nhật trạng thái cổng sang Trống sau khi bảo trì
+        cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (ma_cong,))
         conn.commit()
         conn.close()
 
         QMessageBox.information(self, "Đã ghi nhận",
-                                f"Phiếu bảo trì {ma_bt} đã được tạo.\nCổng {ma_cong} → Bảo trì.")
+                                f"Phiếu bảo trì {ma_bt} đã được tạo.\nCổng {ma_cong} → Trống.")
         self.txt_noi_dung.clear()
         self.txt_ket_qua.clear()
         self.load_cong_list()

@@ -34,7 +34,7 @@ class ThanhToanWidget(QWidget):
 
         title = QLabel("💳 Thanh Toán & Hóa Đơn")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #059669;")
+        title.setStyleSheet(TITLE_STYLE)
         layout.addWidget(title)
 
         role = self.user["VaiTro"]

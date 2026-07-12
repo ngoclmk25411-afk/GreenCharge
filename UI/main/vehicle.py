@@ -119,7 +119,7 @@ class QuanLyXeWidget(QWidget):
         # ── Title ────────────────────────────
         title = QLabel("🚗 Quản lý Xe của tôi")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet(f"color: {G1};")
+        title.setStyleSheet(TITLE_STYLE)
         layout.addWidget(title)
 
         desc = QLabel("Đăng ký, chỉnh sửa và xóa xe điện của bạn. Chuẩn sạc của xe sẽ được kiểm tra khi đặt lịch sạc.")
