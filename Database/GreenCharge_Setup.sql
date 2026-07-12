@@ -24,12 +24,13 @@ create table NGUOI_DUNG
 	HoTen nvarchar(100) not null,
 	Sdt varchar(15) not null unique,
 	Email varchar(100) not null unique,
-	VaiTro nvarchar(100) not null check (VaiTro in (N'KhachHang', N'NhanVien', N'ChuDauTu')) 
+	MatKhau varchar (255) not null,
+	VaiTro nvarchar(20) not null check (VaiTro in (N'KhachHang', N'NhanVien', N'ChuDauTu')),
 );
 create table KHACH_HANG 
 (
 	MaNguoiDung varchar(10) not null primary key foreign key references NGUOI_DUNG(MaNguoiDung),
-	DiemXanh int not null default 0 check (DiemXanh>=0) 
+	TongDiemXanh int not null default 0 check (TongDiemXanh>=0) 
 );
 create table CHU_DAU_TU 
 (
@@ -80,8 +81,10 @@ create table PHIEU_THU_GOM
 	MaLoaiPin varchar(10) not null foreign key references LOAI_PIN(MaLoaiPin),
 	KhoiLuong decimal(6,2) not null check (KhoiLuong>0),
 	DiemThuong int not null check (DiemThuong>=0),
-	NgayThuGom datetime not null
+	NgayThuGom datetime not null,
+	MaTram varchar(10) foreign key references TRAM_SAC(MaTram)
 );
+
 create table LICH_SU_BAO_TRI
 (
 	MaBaoTri varchar(10) not null primary key,
@@ -113,7 +116,7 @@ create table LICH_DAT_CHO (
     MaCong varchar(10) not null foreign key references CONG_SAC(MaCong),
     GioBatDau datetime not null,
     GioKetThuc datetime not null,
-    TrangThaiLich nvarchar(20) not null check (TrangThaiLich in (N'Đã đặt', N'Đang sạc', N'Đã hủy', N'Hoàn thành')),
+    TrangThaiLich nvarchar(20) not null check (TrangThaiLich in (N'Đã sạc', N'Đang sạc', N'Đã hủy', N'Hoàn thành')),
     check (GioKetThuc > GioBatDau) -- Ràng buộc so sánh giữa 2 cột bắt buộc viết riêng cuối dòng định nghĩa thuộc tính
 );
 create table PHIEN_SAC (
@@ -142,19 +145,19 @@ create table HOA_DON (
 --- chèn dữ liệu vào bảng
 
 insert NGUOI_DUNG values
-('ND001', N'Nguyễn Văn An', '0901234567', 'an.nguyen@email.com', N'KhachHang'),
-('ND002', N'Trần Thị Bình', '0912345678', 'binh.tran@email.com', N'KhachHang'),
-('ND003', N'Lê Hoàng Cường', '0923456789', 'cuong.le@email.com', N'KhachHang'),
-('ND004', N'Phạm Thị Dung', '0934567890', 'dung.pham@email.com', N'KhachHang'),
-('ND005', N'Hoàng Minh Đức', '0945678901', 'duc.hoang@email.com', N'ChuDauTu'),
-('ND006', N'Vũ Thành Long', '0956789012', 'long.vu@email.com', N'ChuDauTu'),
-('ND007', N'Đặng Quang Trung', '0967890123', 'trung.dang@email.com', N'NhanVien'),
-('ND008', N'Bùi Thị Hương', '0978901234', 'huong.bui@email.com', N'NhanVien'),
-('ND009', N'Ngô Thị Lan', '0989012345', 'lan.ngo@email.com', N'NhanVien'),
-('ND010', N'Trịnh Văn Khoa', '0990123456', 'khoa.trinh@email.com', N'KhachHang')
+('ND001', N'Nguyễn Văn An', '0901234567', 'an.nguyen@email.com','123456', N'KhachHang'),
+('ND002', N'Trần Thị Bình', '0912345678', 'binh.tran@email.com', '123456', N'KhachHang'),
+('ND003', N'Lê Hoàng Cường', '0923456789', 'cuong.le@email.com','123456', N'KhachHang'),
+('ND004', N'Phạm Thị Dung', '0934567890', 'dung.pham@email.com','123456', N'KhachHang'),
+('ND005', N'Hoàng Minh Đức', '0945678901', 'duc.hoang@email.com', '123456', N'ChuDauTu'),
+('ND006', N'Vũ Thành Long', '0956789012', 'long.vu@email.com', '123456', N'ChuDauTu'),
+('ND007', N'Đặng Quang Trung', '0967890123', 'trung.dang@email.com', '123456',N'NhanVien'),
+('ND008', N'Bùi Thị Hương', '0978901234', 'huong.bui@email.com','123456', N'NhanVien'),
+('ND009', N'Ngô Thị Lan', '0989012345', 'lan.ngo@email.com', '123456',N'NhanVien'),
+('ND010', N'Trịnh Văn Khoa', '0990123456', 'khoa.trinh@email.com','123456', N'KhachHang');
 select*from NGUOI_DUNG
 ---
-insert KHACH_HANG (MaNguoiDung, DiemXanh) values
+insert KHACH_HANG (MaNguoiDung, TongDiemXanh) values
 	('ND001', 350),
 	('ND002', 0),
 	('ND003', 120),
@@ -194,11 +197,11 @@ insert LOAI_PIN values
 select*from LOAI_PIN
 ---
 insert PHIEU_THU_GOM values
-	('PG001', 'ND001', 'ND009', 'LP001', 5.20, 416, '2026-06-10 09:30:00'),
-	('PG002', 'ND002', 'ND007', 'LP002', 3.00, 360, '2026-06-12 14:00:00'),
-	('PG003', 'ND003', 'ND008', 'LP003', 2.50, 375, '2026-06-15 10:15:00'),
-	('PG004', 'ND004', 'ND009', 'LP004', 1.80, 180, '2026-06-18 16:45:00'),
-	('PG005', 'ND010', 'ND007', 'LP005', 4.00, 240, '2026-06-20 11:00:00')
+	('PG001', 'ND001', 'ND009', 'LP001', 5.20, 416, '2026-06-10 09:30:00','TS003'),
+	('PG002', 'ND002', 'ND007', 'LP002', 3.00, 360, '2026-06-12 14:00:00','TS001'),
+	('PG003', 'ND003', 'ND008', 'LP003', 2.50, 375, '2026-06-15 10:15:00','TS002'),
+	('PG004', 'ND004', 'ND009', 'LP004', 1.80, 180, '2026-06-18 16:45:00','TS003'),
+	('PG005', 'ND010', 'ND007', 'LP005', 4.00, 240, '2026-06-20 11:00:00','TS001');
 select*from PHIEU_THU_GOM
 ---
 insert into CONG_SAC (MaCong, MaTram, MaChuanSac, CongSuat, LoaiCaySac, TrangThaiCong) values
@@ -294,7 +297,7 @@ insert into BieuGiaDien (MaBieuGia, LoaiCaySac, KhungGio, GioBatDau, GioKetThuc,
 
 	 ('BG013', N'AC', N'Giờ bình thường',
 	 '06:00:00', '17:59:59',
-	 3000.00,
+	 3300.00,
 	 '2025-01-01',
 	 N'Ngừng áp dụng');
 select * from BieuGiaDien
@@ -311,27 +314,27 @@ insert into LICH_DAT_CHO values
 	('LD001','XE001','CG001',
 	'2026-06-10 09:00',
 	'2026-06-10 10:00',
-	N'Hoàn thành'),
+	N'Đã sạc'),
 
 	('LD002','XE002','CG002',
 	'2026-06-12 14:00',
 	'2026-06-12 15:30',
-	N'Hoàn thành'),
+	N'Đã sạc'),
 
 	('LD003','XE003','CG003',
 	'2026-06-15 10:00',
 	'2026-06-15 11:00',
-	N'Hoàn thành'),
+	N'Đã sạc'),
 
 	('LD004','XE004','CG004',
 	'2026-06-18 16:00',
 	'2026-06-18 17:00',
-	N'Hoàn thành'),
+	N'Đã sạc'),
 
 	('LD005','XE005','CG001',
 	'2026-06-20 08:30',
 	'2026-06-20 09:30',
-	N'Hoàn thành');
+	N'Đã sạc');
 select * from LICH_DAT_CHO
 ---
 insert into PHIEN_SAC (MaPhien, MaLichDat, GioBatDau, GioKetThuc, 
@@ -377,4 +380,360 @@ insert into PHIEN_SAC (MaPhien, MaLichDat, GioBatDau, GioKetThuc,
 	 N'Hoàn thành',
 	 'BG010');
 select * from PHIEN_SAC
----
+--- FUNCTION LẤY ĐƠN GIÁ THEO LOẠI CÂY SẠC VÀ THỜI GIAN ---
+go
+create or alter function fn_LayDonGia (@LoaiCaySac nvarchar(30), @ThoiDiem datetime)
+returns decimal(18,2) 
+as
+begin
+	declare @DonGia decimal (18,2)
+	select top 1
+		@DonGia = DonGiaKwh
+	from BieuGiaDien
+	where LoaiCaySac = @LoaiCaySac
+		and TrangThai = N'Đang Áp dụng'
+		and cast(@ThoiDiem as time)
+			between GioBatDau and GioKetThuc
+	return @DonGia
+end
+go
+--- TẠO STORED PROCEDURE Đặt lịch sạc
+--- Quy tắc kiểm tra: 
+	-- Giờ bắt đầu > hiện tại
+	-- Giờ kết thúc > giờ bắt đầu
+	-- Chuẩn sạc đúng
+	-- Cổng phải đang Trống
+	-- Không trùng lịch
+	-- Insert thành công
+go
+create or alter PROC SP_DatlichSac
+	@MaLichDat varchar(10),
+	@MaXe varchar(10),
+	@MaCong varchar(10),
+	@GioBatDau datetime,
+	@GioKetThuc datetime
+as
+begin
+set nocount on;
+begin try
+	-- Kiểm tra thời gian --
+	if @GioBatDau<=GETDATE()
+	begin
+		raiserror(N'Giờ bắt đầu phải lớn hơn thời gian hiện tại.',16,1)
+		return
+	end
+
+	if @GioKetThuc<=@GioBatDau
+	begin
+		raiserror(N'Giờ kết thúc phải lớn hơn giờ bắt đầu.',16,1)
+		return
+	end
+	-- Kiểm tra chuẩn sạc --
+	declare
+		@ChuanXe varchar(10),
+		@ChuanCong varchar(10)
+	select @ChuanXe=MaChuanSac from XE where MaXe=@MaXe
+	select @ChuanCong=MaChuanSac from CONG_SAC where MaCong=@MaCong
+	if @ChuanXe<>@ChuanCong
+	begin
+		raiserror(N'Chuẩn sạc của xe không tương thích với cổng sạc.',16,1)
+		return
+	end
+	-- Kiểm tra trạng thái cổng --
+	if not exists
+	(select * from CONG_SAC where MaCong=@MaCong and TrangThaiCong=N'Trống')
+	begin
+		raiserror(N'Cổng sạc hiện không khả dụng.',16,1)
+		return
+	end
+	-- Kiểm tra trùng lịch --
+	if exists
+	(select * from LICH_DAT_CHO where MaCong=@MaCong and TrangThaiLich<>N'Đã hủy'
+								and (@GioBatDau<GioKetThuc and @GioKetThuc>GioBatDau))
+	begin
+		raiserror(N'Khung giờ đã được đặt.',16,1)
+		return
+	end
+	-- Insert lịch --
+	insert into LICH_DAT_CHO(MaLichDat,MaXe,MaCong,GioBatDau,GioKetThuc,TrangThaiLich)
+	values
+	(
+		@MaLichDat,
+		@MaXe,
+		@MaCong,
+		@GioBatDau,
+		@GioKetThuc,
+		N'Đã đặt'
+	)
+	print N'Đặt lịch thành công.'
+end try
+begin catch
+	print ERROR_MESSAGE()
+end catch
+end
+go
+--- Tạo STORED PROCEDURE SP_ThuGomPin
+go 
+create or alter PROC SP_ThuGomPin
+	@MaPhieu varchar(10),
+	@MaNguoiDung_KH varchar(10),
+	@MaNguoiDung_NV varchar(10),
+	@MaLoaiPin varchar(10),
+	@KhoiLuong decimal(6,2),
+	@NgayThuGom datetime,
+	@MaTram varchar(10)
+as
+begin
+set nocount on;
+begin try
+	-- Kiểm tra dữ liệu --
+	if @KhoiLuong<=0
+	begin 
+		raiserror(N'Khối lượng pin phải lớn hơn 0.',16,1)
+		return
+	end
+	-- Lấy hệ số quy đổi --
+	declare
+		@HeSo decimal(5,2),
+		@Diem int
+	select @HeSo=HeSoQuyDoi from LOAI_PIN where MaLoaiPin=@MaLoaiPin
+	if @HeSo is null
+	begin
+		raiserror(N'Không tồn tại loại pin.',16,1)
+		return
+	end
+	-- Tính điểm --
+	set @Diem=round(@KhoiLuong*@HeSo,0)
+	-- Insert phiếu --
+	insert into PHIEU_THU_GOM 
+	(MaPhieu,MaNguoiDung_KH,MaNguoiDung_NV,
+	MaLoaiPin,KhoiLuong,DiemThuong,NgayThuGom,MaTram) 
+	values
+	(
+		@MaPhieu,
+        @MaNguoiDung_KH,
+        @MaNguoiDung_NV,
+        @MaLoaiPin,
+        @KhoiLuong,
+        @Diem,
+        @NgayThuGom,
+        @MaTram
+    )
+	print N'Tạo phiếu thu gom thành công.'
+end try
+begin catch
+	print ERROR_MESSAGE()
+end catch
+end
+go
+--- TẠO TRIGGER KHI PHIẾU THU GOM ĐƯỢC XÁC NHẬN THÀNH CÔNG THÌ CỘNG ĐIỂM
+go
+create or alter trigger TRG_CongDiemXanh on PHIEU_THU_GOM
+after insert
+as
+begin
+set nocount on;
+update KH
+set KH.TongDiemXanh = KH.TongDiemXanh + I.DiemThuong
+from KHACH_HANG KH join inserted I on KH.MaNguoiDung=I.MaNguoiDung_KH
+end
+go
+--- TẠO TRIGGER KIỂM TRA NHÂN VIÊN THUỘC ĐÚNG TRẠM
+go
+create or alter trigger TRG_KiemTraTramThuGom on PHIEU_THU_GOM
+after insert
+as
+begin
+set nocount on;
+if exists
+(
+	select * from inserted I join NHAN_VIEN NV on I.MaNguoiDung_NV=NV.MaNguoiDung
+	where I.MaTram<>NV.MaTram
+)
+begin
+	raiserror(N'Nhân viên không thuộc trạm tiếp nhận.',16,1)
+	rollback transaction
+end
+end
+go
+--- TẠO STORED PROCEDURE SP_ThanhToanHoaDon
+go
+create or alter PROC SP_ThanhToanHoaDon
+	@MaHD varchar(10),
+	@MaPhien varchar(10),
+	@SoDiemMuonDung int,
+	@PhuongThucThanhToan nvarchar(30)
+as
+begin
+set nocount on;
+begin try
+begin TRAN
+-- Khai báo biến
+declare
+	@MaKH varchar(10),
+    @MaCong varchar(10),
+    @LoaiCaySac nvarchar(30),
+    @DonGia decimal(18,2),
+    @TongTienGoc decimal(18,2),
+    @TongTienThanhToan decimal(18,2),
+    @SoTienGiam decimal(18,2),
+    @PhiVanHanh decimal(18,2),
+    @DoanhThuCDT decimal(18,2),
+    @SoDuDiem int,
+    @SoKwh decimal(8,2),
+    @GioBatDau datetime,
+    @MaChuDauTu varchar(10)
+-- Lấy dữ liệu phiên sạc
+select
+	@SoKwh = PS.SoKwhTieuThu,
+    @GioBatDau = PS.GioBatDau,
+    @MaCong = LD.MaCong,
+    @MaKH = XE.MaNguoiDung
+from PHIEN_SAC PS join LICH_DAT_CHO LD on PS.MaLichDat=LD.MaLichDat
+join XE on LD.MaXe=XE.MaXe where PS.MaPhien=@MaPhien
+if @SoKwh is null
+begin
+	raiserror(N'Không tồn tại phiên sạc.',16,1)
+	rollback
+	return
+end
+-- Lấy loại cây sạc
+select @LoaiCaySac=LoaiCaySac from CONG_SAC where MaCong=@MaCong
+-- Lấy đơn giá
+set @DonGia=dbo.fn_LayDonGia
+(
+	@LoaiCaySac,
+	@GioBatDau
+)
+-- Tính tiền gốc
+set @TongTienGoc=@SoKwh*@DonGia
+-- Lấy điểm khách hàng
+select @SoDuDiem=TongDiemXanh from KHACH_HANG where MaNguoiDung=@MaKH
+-- Kiểm tra số điểm
+if @SoDiemMuonDung>@SoDuDiem
+begin
+	raiserror(N'Điểm xanh không đủ.',16,1)
+	rollback
+	return
+end
+-- Tính tiền giảm
+set @SoTienGiam=@SoDiemMuonDung*100 --Không vượt quá 10%
+if @SoTienGiam>@TongTienGoc*0.1
+begin
+	set @SoTienGiam=@TongTienGoc*0.1
+	set @SoDiemMuonDung=@SoTienGiam/100
+end
+-- Thành tiền
+set @TongTienThanhToan = @TongTienGoc-@SoTienGiam
+-- Phí vận hành
+set @PhiVanHanh = @TongTienThanhToan*0.1
+-- Doanh thu Chủ đầu tư
+set @DoanhThuCDT = @TongTienThanhToan*0.9
+-- Insert hóa đơn
+insert into HOA_DON
+(
+	MaHD,
+    MaPhien,
+    MaNguoiDung,
+    TongTienGoc,
+    SoDiemTieuThu,
+    SoTienGiam,
+    TongTienThanhToan,
+    PhiVanHanhApp,
+    DoanhThuCDT,
+    TrangThaiHD,
+    NgayThanhToan,
+    PhuongThucThanhToan
+)
+values
+(
+    @MaHD,
+    @MaPhien,
+    @MaKH,
+    @TongTienGoc,
+    @SoDiemMuonDung,
+    @SoTienGiam,
+    @TongTienThanhToan,
+    @PhiVanHanh,
+    @DoanhThuCDT,
+    N'Đã thanh toán',
+    GETDATE(),
+    @PhuongThucThanhToan
+)
+-- Trừ điểm xanh
+update KHACH_HANG
+set TongDiemXanh = TongDiemXanh-@SoDiemMuonDung
+where MaNguoiDung=@MaKH
+--Tìm chủ đầu tư
+select @MaChuDauTu=TS.MaNguoiDung
+from CONG_SAC CS join TRAM_SAC TS on CS.MaTram=TS.MaTram where CS.MaCong=@MaCong
+-- Cộng doanh thu
+update CHU_DAU_TU
+set SoDuDoanhThu = SoDuDoanhThu+@DoanhThuCDT
+where MaNguoiDung=@MaChuDauTu
+update PHIEN_SAC
+set TrangThaiPhien=N'Hoàn thành'
+where MaPhien=@MaPhien;
+commit
+print N'Thanh toán thành công.'
+end try
+begin catch
+if @@TRANCOUNT>0
+rollback
+print ERROR_MESSAGE()
+end catch
+end
+go
+
+--- TẠO TRIGGER HOÀN THÀNH PHIÊN SẠC --> GIẢI PHÓNG CỔNG SẠC
+-- Khi phiên sạc chuyển sang "Hoàn thành" => cổng sạc chuyển sang Trống
+go 
+create or alter trigger TRG_HoanThanhPhienSac
+on PHIEN_SAC
+after update
+as 
+begin
+	set nocount on;
+	update CS
+	set TrangThaiCong=N'Trống' 
+	from CONG_SAC CS 
+	join LICH_DAT_CHO L on CS.MaCong=L.MaCong
+	join inserted I on L.MaLichDat=I.MaLichDat
+	join deleted D on D.MaPhien=I.MaPhien
+	where D.TrangThaiPhien<>N'Hoàn thành'
+	and I.TrangThaiPhien=N'Hoàn thành'
+end
+go
+
+--- TẠO TRIGGER KHI PHIÊN SẠC BẮT ĐẦU, CỔNG CHUYỂN SANG "ĐANG SẠC"
+go
+create or alter trigger TRG_BatDauSac 
+on PHIEN_SAC
+after insert
+as 
+begin
+	update CS
+	set TrangThaiCong=N'Đang sạc'
+	from CONG_SAC CS 
+	join LICH_DAT_CHO L	on CS.MaCong=L.MaCong
+	join inserted I on L.MaLichDat=I.MaLichDat
+	where I.TrangThaiPhien=N'Đang sạc'
+end
+go
+--- TẠO TRIGGER CHẶN TỒN TẠI ĐỒNG THỜI NHIỀU PHIÊN SẠC ĐANG SẠC TRÊN CÙNG MỘT CỔNG
+go
+create or alter trigger TRG_MotCongMotPhien
+on PHIEN_SAC
+after insert,update
+as
+begin
+if exists (select L.MaCong from PHIEN_SAC P join LICH_DAT_CHO L on P.MaLichDat=L.MaLichDat
+			where P.TrangThaiPhien=N'Đang sạc'
+			group by L.MaCong
+			having count(*)>1)
+	begin
+		raiserror(N'Mỗi cổng chỉ được có một phiên đang sạc!',16,1)
+		rollback
+	end
+end
+go
