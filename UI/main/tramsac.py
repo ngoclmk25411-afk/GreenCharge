@@ -86,7 +86,7 @@ class TramSacWidget(QWidget):
         title_text = "🔌 Quản lý Trạm & Cổng Sạc" if role in ("ChuDauTu", "NhanVien") else "🔌 Trạm Sạc & Cổng Sạc"
         title = QLabel(title_text)
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet(TITLE_STYLE)
+        title.setStyleSheet("color: #059669;")
         title.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(title)
 

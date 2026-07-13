@@ -40,7 +40,7 @@ class PhienSacWidget(QWidget):
 
         title = QLabel("⚡ Quản lý Phiên Sạc")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet(TITLE_STYLE)
+        title.setStyleSheet("color: #059669;")
         layout.addWidget(title)
 
         role = self.user["VaiTro"]

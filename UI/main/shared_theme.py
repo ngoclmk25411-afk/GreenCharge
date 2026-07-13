@@ -5,7 +5,7 @@
 G1  = "#059669"
 G2  = "#10b981"
 G3  = "#34d399"
-G_L = "#e2e8e5"
+G_L = "#f6fbf9"
 G_M = "#d1fae5"
 G_B = "#a7f3d0"
 
@@ -13,21 +13,16 @@ GROUP_STYLE = f"""
 QGroupBox {{
     font-weight: 700;
     color: {G1};
-    border: 1.5px solid #cbd5e1;
+    border: 1px solid #e2e8f0;
     border-radius: 12px;
-    margin-top: 16px;
-    padding-top: 16px;
-    padding-bottom: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
     background-color: #ffffff;
 }}
 QGroupBox::title {{
     subcontrol-origin: margin;
-    subcontrol-position: top left;
     left: 14px;
-    padding: 3px 10px;
-    background-color: #ffffff;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 6px;
+    padding: 0 6px;
     color: {G1};
     font-size: 13px;
 }}
@@ -115,7 +110,6 @@ QLabel {{
     font-weight: 600;
     font-size: 12px;
     font-family: 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
-    background-color: transparent;
 }}
 QLineEdit, QComboBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox {{
     background-color: #ffffff;
@@ -152,10 +146,7 @@ QDialogButtonBox QPushButton:hover {{
 }}
 """
 
-TITLE_STYLE = (
-    f"color: #047857; background-color: #ffffff; border: 1.5px solid #cbd5e1;"
-    f" border-radius: 8px; padding: 6px 14px;"
-)
+TITLE_STYLE = f"color: {G1}; font-size: 16px; font-weight: 700;"
 LBL_STYLE   = f"color: #374151; font-weight: 600; font-size: 12px;"
 
 

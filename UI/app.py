@@ -25,7 +25,7 @@ DB_PATH = "datasets/data.db"
 G1  = "#059669"   # Emerald 600 (Primary)
 G2  = "#10b981"   # Emerald 500 (Hover/Gradient)
 G3  = "#34d399"   # Emerald 400 (Light)
-G_L = "#e2e8e5"   # Sage Green-Gray Canvas Background
+G_L = "#f6fbf9"   # Nền rất nhạt (App Background)
 G_M = "#d1fae5"   # Xanh nhạt (Selection/Highlight)
 G_B = "#a7f3d0"   # Border xanh
 # ────────────────────────────────────────
@@ -66,39 +66,29 @@ QMainWindow, QDialog, QWidget {{
 QTabWidget::pane {{
     border: none;
     background-color: transparent;
-}}
-QTabBar {{
-    qproperty-drawBase: 0;
-    left: 8px;
+    top: -1px;
 }}
 QTabBar::tab {{
-    background-color: #ffffff;
-    color: #4b5563; /* Slate 600 */
-    border: 1px solid #cbd5e1; /* Gray 300 */
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 13px;
+    background-color: transparent;
+    color: #6b7280;
+    padding: 10px 24px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
     font-weight: 600;
-    margin-right: 6px;
-    margin-top: 6px;
-    margin-bottom: 6px;
+    margin-right: 4px;
 }}
 QTabBar::tab:selected {{
-    background-color: {G1};
-    color: #ffffff;
-    border: 1px solid {G1};
+    color: {G1};
+    border-bottom: 2px solid {G1};
 }}
 QTabBar::tab:hover:!selected {{
-    background-color: {G_M};
-    color: {G1};
-    border-color: {G_B};
+    color: {G2};
+    border-bottom: 2px solid {G_B};
 }}
 
 /* ── Labels ── */
-QLabel {{
-    color: #1f2937;
-    background-color: transparent;
-}}
+QLabel {{ color: #1f2937; }}
 
 /* ── ScrollBar ── */
 QScrollBar:vertical {{

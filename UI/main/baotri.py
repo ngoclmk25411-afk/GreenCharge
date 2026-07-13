@@ -35,7 +35,7 @@ class BaoTriWidget(QWidget):
 
         title = QLabel("🔧 Lịch Sử Bảo Trì Cổng Sạc")
         title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        title.setStyleSheet(TITLE_STYLE)
+        title.setStyleSheet("color: #059669;")
         layout.addWidget(title)
 
         splitter = QSplitter(Qt.Orientation.Vertical)
@@ -45,8 +45,7 @@ class BaoTriWidget(QWidget):
         form_box.setStyleSheet(self._group_style())
         form_box.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         form_layout = QFormLayout(form_box)
-        form_layout.setVerticalSpacing(18)
-        form_layout.setHorizontalSpacing(12)
+        form_layout.setSpacing(10)
         form_layout.setContentsMargins(16, 20, 16, 16)
 
         self.cmb_cong = QComboBox()
