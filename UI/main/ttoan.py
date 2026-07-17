@@ -221,6 +221,13 @@ class ThanhToanWidget(QWidget):
                 return
 
             ma_tram_sel = self.cmb_tram_dt.currentData()
+            self._load_tram_list_dt()
+            
+            idx = self.cmb_tram_dt.findData(ma_tram_sel)
+            if idx >= 0:
+                self.cmb_tram_dt.blockSignals(True)
+                self.cmb_tram_dt.setCurrentIndex(idx)
+                self.cmb_tram_dt.blockSignals(False)
 
             where_clause = "ts.MaNguoiDung=?"
             params = [ma]

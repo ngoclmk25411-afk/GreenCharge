@@ -48,6 +48,17 @@ class TramDialog(QDialog):
             self.txt_dia_chi.setText(self.tram_data[2])
             idx = 0 if self.tram_data[3] == "Hoạt động" else 1
             self.cmb_trang_thai.setCurrentIndex(idx)
+        else:
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute("SELECT MaTram FROM TRAM_SAC")
+            existing = [r[0] for r in cur.fetchall()]
+            conn.close()
+            n = 1
+            while f"TS{n:03d}" in existing:
+                n += 1
+            self.txt_ma.setText(f"TS{n:03d}")
+            self.txt_ma.setEnabled(False)
 
         layout.addRow("Mã trạm:", self.txt_ma)
         layout.addRow("Tên trạm:", self.txt_ten)
@@ -220,7 +231,9 @@ class TramSacWidget(QWidget):
         cong_suat, ok2 = QInputDialog.getDouble(self, "Thêm cổng", "Công suất (kW):", 22.0, 3.0, 350.0, 1)
         if not ok2: return
 
-        loai = "DC" if cong_suat >= 50 else "AC"
+        loai, ok3 = QInputDialog.getItem(self, "Thêm cổng", "Loại cổng sạc:", ["AC", "DC", "Siêu nhanh"], 0, False)
+        if not ok3: return
+
 
         conn = get_conn()
         cur = conn.cursor()
@@ -229,16 +242,24 @@ class TramSacWidget(QWidget):
         mc = cur.fetchone()
         ma_chuan = mc[0] if mc else "CH001"
 
-        cur.execute("SELECT COUNT(*) FROM CONG_SAC")
-        n = cur.fetchone()[0]
-        ma_cong = f"CS{n + 1:03d}"
+        cur.execute("SELECT MaCong FROM CONG_SAC")
+        existing = [r[0] for r in cur.fetchall()]
+        n = 1
+        while f"CS{n:03d}" in existing:
+            n += 1
+        ma_cong = f"CS{n:03d}"
 
-        cur.execute(
-            "INSERT INTO CONG_SAC (MaCong, MaTram, MaChuanSac, CongSuat, LoaiCaySac, TrangThaiCong) VALUES (?,?,?,?,?,?)",
-            (ma_cong, ma_tram, ma_chuan, cong_suat, loai, 'Trống'))
-        conn.commit()
-        conn.close()
-        QMessageBox.information(self, "Thành công", f"Đã thêm cổng {ma_cong} cho trạm {ma_tram}.")
+        try:
+            cur.execute(
+                "INSERT INTO CONG_SAC (MaCong, MaTram, MaChuanSac, CongSuat, LoaiCaySac, TrangThaiCong) VALUES (?,?,?,?,?,?)",
+                (ma_cong, ma_tram, ma_chuan, cong_suat, loai, 'Trống'))
+            conn.commit()
+            QMessageBox.information(self, "Thành công", f"Đã thêm cổng {ma_cong} cho trạm {ma_tram}.")
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", str(e))
+        finally:
+            conn.close()
+        
         self.load_cong(ma_tram)
 
     def load_data(self):
