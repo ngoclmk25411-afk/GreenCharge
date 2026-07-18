@@ -319,24 +319,34 @@ class ThanhToanWidget(QWidget):
         if row < 0:
             return
         ma_hd = self.tbl_hd.item(row, 0).text()
-        tong = self.tbl_hd.item(row, 2).text().replace(",", "").replace(" đ", "")
-        trang_thai = self.tbl_hd.item(row, 6).text()
-        self.lbl_hd_info.setText(f"HĐ: {ma_hd} | Tổng tiền gốc: {self.tbl_hd.item(row, 2).text()} | Trạng thái: {trang_thai}")
-        self.tinh_tien_sau_giam()
+
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT TongTienGoc, SoDiemTieuThu, SoTienGiam, TongTienThanhToan, TrangThaiHD
+            FROM HoaDon
+            WHERE MaHD=?
+        """, (ma_hd,))
+        hd = cur.fetchone()
+        conn.close()
+
+        if not hd:
+            return
+
+        tong_goc, diem_dung, tien_giam, tong_tt, trang_thai = hd
+
+        self.lbl_hd_info.setText(f"HĐ: {ma_hd} | Tổng tiền gốc: {int(tong_goc):,} đ | Trạng thái: {trang_thai}")
+
+        self.spin_diem.blockSignals(True)
+        self.spin_diem.setValue(int(diem_dung))
+        self.spin_diem.setEnabled(False)  # Đã quy đổi điểm xanh tự động lúc tạo hóa đơn nên không cho sửa tay
+        self.spin_diem.blockSignals(False)
+
+        self.lbl_sau_giam.setText(f"Sau giảm: {int(tong_tt):,} đ")
 
     def tinh_tien_sau_giam(self):
-        row = self.tbl_hd.currentRow()
-        if row < 0:
-            return
-        tong_str = self.tbl_hd.item(row, 2).text().replace(",", "").replace(" đ", "").strip()
-        try:
-            tong = float(tong_str)
-        except:
-            return
-        diem = self.spin_diem.value()
-        giam = diem * 1000
-        sau_giam = max(0, tong - giam)
-        self.lbl_sau_giam.setText(f"Sau giảm: {int(sau_giam):,} đ")
+        # Không cần thiết xử lý thủ công nữa do quy đổi tự động và spinbox đã bị disable
+        pass
 
     def thanh_toan(self):
         row = self.tbl_hd.currentRow()
@@ -354,6 +364,9 @@ class ThanhToanWidget(QWidget):
             SELECT
                 MaNguoiDung,
                 TongTienGoc,
+                SoDiemTieuThu,
+                SoTienGiam,
+                TongTienThanhToan,
                 TrangThaiHD
             FROM HoaDon
             WHERE MaHD=?
@@ -366,59 +379,22 @@ class ThanhToanWidget(QWidget):
             QMessageBox.warning(self, "Lỗi", "Không tìm thấy hóa đơn.")
             return
 
-        ma_nd, tong_goc, trang_thai = hd
+        ma_nd, tong_goc, so_diem_tieu_thu, so_tien_giam, tong_tt, trang_thai = hd
 
         if trang_thai == "Đã thanh toán":
             conn.close()
             QMessageBox.information(self, "Thông báo", "Hóa đơn đã được thanh toán.")
             return
 
-        tong_goc = float(tong_goc)
-
-        # Điểm xanh hiện có
-        cur.execute("""
-            SELECT DiemXanh
-            FROM KHACH_HANG
-            WHERE MaNguoiDung=?
-        """, (ma_nd,))
-
-        diem = cur.fetchone()
-        diem_hien_co = diem[0] if diem else 0
-
-        dung_diem = self.spin_diem.value()
-        if dung_diem > diem_hien_co:
-            dung_diem = diem_hien_co
-
-        giam = dung_diem * 1000
-
-        tong_tt = max(0, tong_goc - giam)
-
-        # Trừ điểm
-        if dung_diem > 0:
-            cur.execute("""
-                UPDATE KHACH_HANG
-                SET DiemXanh = DiemXanh - ?
-                WHERE MaNguoiDung=?
-            """, (
-                dung_diem,
-                ma_nd
-            ))
-
-        # Cập nhật hóa đơn
+        # Cập nhật trạng thái hóa đơn thành Đã thanh toán (Điểm và tiền giảm đã được chốt và trừ lúc tạo hóa đơn)
         cur.execute("""
             UPDATE HoaDon
             SET
-                SoDiemTieuThu=?,
-                SoTienGiam=?,
-                TongTienThanhToan=?,
                 TrangThaiHD='Đã thanh toán',
                 NgayThanhToan=datetime('now', 'localtime'),
                 PhuongThucThanhToan=?
             WHERE MaHD=?
         """, (
-            dung_diem,
-            giam,
-            tong_tt,
             self.cmb_pttt.currentText(),
             ma_hd
         ))
@@ -431,9 +407,9 @@ class ThanhToanWidget(QWidget):
             "Thành công",
             f"""Thanh toán thành công.
 
-    Điểm dùng: {dung_diem}
+    Điểm dùng: {so_diem_tieu_thu}
 
-    Giảm: {int(giam):,} đ
+    Giảm: {int(so_tien_giam):,} đ
 
     Thanh toán: {int(tong_tt):,} đ"""
         )

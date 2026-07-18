@@ -695,12 +695,32 @@ class PhienSacWidget(QWidget):
         cur.execute("SELECT COUNT(*) FROM HoaDon")
         n_hd = cur.fetchone()[0]
         ma_hd = f"HD{n_hd+1:03d}"
+
+        # Kiểm tra tự động quy đổi điểm xanh
+        points_needed = int((tong_tien * 0.05) / 1000)
+        cur.execute("SELECT DiemXanh FROM KHACH_HANG WHERE MaNguoiDung=?", (ma_kh,))
+        kh_row = cur.fetchone()
+        diem_hien_tai = kh_row[0] if kh_row else 0
+
+        so_diem_tieu_thu = 0
+        so_tien_giam = 0
+        tong_tien_thanh_toan = tong_tien
+
+        if points_needed > 0 and diem_hien_tai >= points_needed:
+            so_diem_tieu_thu = points_needed
+            so_tien_giam = points_needed * 1000
+            tong_tien_thanh_toan = tong_tien - so_tien_giam
+            phi_app = round(tong_tien_thanh_toan * 0.05, 2)
+            doanh_thu = round(tong_tien_thanh_toan * 0.95, 2)
+            cur.execute("UPDATE KHACH_HANG SET DiemXanh = DiemXanh - ? WHERE MaNguoiDung=?", (points_needed, ma_kh))
+
         cur.execute("""
             INSERT INTO HoaDon
             (MaHD, MaPhien, MaNguoiDung, TongTienGoc, SoDiemTieuThu, SoTienGiam,
              TongTienThanhToan, PhiVanHanhApp, DoanhThuCDT, TrangThaiHD, NgayThanhToan, PhuongThucThanhToan)
-            VALUES (?,?,?,?,0,0,?,?,?,'Chưa thanh toán',?,'Tiền mặt')
-        """, (ma_hd, ma_phien, ma_kh, tong_tien, tong_tien, phi_app, doanh_thu, now_str))
+            VALUES (?,?,?,?,?,?,?,?,?,'Chưa thanh toán',?,'Tiền mặt')
+        """, (ma_hd, ma_phien, ma_kh, tong_tien, so_diem_tieu_thu, so_tien_giam,
+              tong_tien_thanh_toan, phi_app, doanh_thu, now_str))
 
         if ma_lich:
             cur.execute("SELECT MaCong FROM LichDatCho WHERE MaLichDat=?", (ma_lich,))
@@ -712,11 +732,17 @@ class PhienSacWidget(QWidget):
         conn.commit()
         conn.close()
 
+        msg_giam = ""
+        if so_diem_tieu_thu > 0:
+            msg_giam = f"🎁 Đã tự động dùng {so_diem_tieu_thu} điểm xanh để giảm {int(so_tien_giam):,} đ!\n"
+
         QMessageBox.information(
             self, "Ngắt kết nối thành công ✅",
             f"Phiên {ma_phien} đã kết thúc!\n\n"
             f"🔋 Tiêu thụ: {kwh} kWh\n"
-            f"💵 Tổng tiền: {int(tong_tien):,} đ\n"
+            f"💵 Tổng tiền gốc: {int(tong_tien):,} đ\n"
+            f"{msg_giam}"
+            f"💰 Cần thanh toán: {int(tong_tien_thanh_toan):,} đ\n"
             f"📋 Hóa đơn: {ma_hd}\n\n"
             f"👉 Hệ thống đang tự động chuyển sang tab Hóa Đơn để bạn thanh toán."
         )
@@ -814,12 +840,31 @@ class PhienSacWidget(QWidget):
         n_hd = cur.fetchone()[0]
         ma_hd = f"HD{n_hd+1:03d}"
 
+        # Kiểm tra tự động quy đổi điểm xanh
+        points_needed = int((tong_tien * 0.05) / 1000)
+        cur.execute("SELECT DiemXanh FROM KHACH_HANG WHERE MaNguoiDung=?", (ma_kh,))
+        kh_row = cur.fetchone()
+        diem_hien_tai = kh_row[0] if kh_row else 0
+
+        so_diem_tieu_thu = 0
+        so_tien_giam = 0
+        tong_tien_thanh_toan = tong_tien
+
+        if points_needed > 0 and diem_hien_tai >= points_needed:
+            so_diem_tieu_thu = points_needed
+            so_tien_giam = points_needed * 1000
+            tong_tien_thanh_toan = tong_tien - so_tien_giam
+            phi_app = round(tong_tien_thanh_toan * 0.05, 2)
+            doanh_thu = round(tong_tien_thanh_toan * 0.95, 2)
+            cur.execute("UPDATE KHACH_HANG SET DiemXanh = DiemXanh - ? WHERE MaNguoiDung=?", (points_needed, ma_kh))
+
         cur.execute("""
             INSERT INTO HoaDon
             (MaHD, MaPhien, MaNguoiDung, TongTienGoc, SoDiemTieuThu, SoTienGiam,
              TongTienThanhToan, PhiVanHanhApp, DoanhThuCDT, TrangThaiHD, NgayThanhToan, PhuongThucThanhToan)
-            VALUES (?,?,?,?,0,0,?,?,?,'Chưa thanh toán',?,'Tiền mặt')
-        """, (ma_hd, ma_phien, ma_kh, tong_tien, tong_tien, phi_app, doanh_thu, now_str))
+            VALUES (?,?,?,?,?,?,?,?,?,'Chưa thanh toán',?,'Tiền mặt')
+        """, (ma_hd, ma_phien, ma_kh, tong_tien, so_diem_tieu_thu, so_tien_giam,
+              tong_tien_thanh_toan, phi_app, doanh_thu, now_str))
 
         # Trả cổng về Trống
         cur.execute("UPDATE CONG_SAC SET TrangThaiCong='Trống' WHERE MaCong=?", (ma_cong,))
@@ -830,11 +875,17 @@ class PhienSacWidget(QWidget):
         conn.commit()
         conn.close()
 
+        msg_giam = ""
+        if so_diem_tieu_thu > 0:
+            msg_giam = f"🎁 Đã tự động dùng {so_diem_tieu_thu} điểm xanh để giảm {int(so_tien_giam):,} đ!\n"
+
         QMessageBox.information(
             self, "Hệ thống tự động ngắt kết nối 🔌",
             f"Phiên sạc {ma_phien} đã tự động kết thúc do hết giờ đặt lịch!\n\n"
             f"🔋 Tiêu thụ: {kwh} kWh\n"
-            f"💵 Tổng tiền: {int(tong_tien):,} đ\n"
+            f"💵 Tổng tiền gốc: {int(tong_tien):,} đ\n"
+            f"{msg_giam}"
+            f"💰 Cần thanh toán: {int(tong_tien_thanh_toan):,} đ\n"
             f"📋 Hóa đơn: {ma_hd}\n\n"
             f"👉 Hệ thống đang tự động chuyển sang tab Hóa Đơn để bạn thanh toán."
         )
